@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=42", "wheel>=0.38.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "indicate"
+version = "0.2.0"
+description = "Transliterations to/from Indian languages"
+readme = "README.rst"
+authors = [
+    {name = "Rajashekar Chintalapati", email = "rajshekar.ch@gmail.com"},
+    {name = "Gaurav Sood", email = "gsood07@gmail.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+keywords = ["transliterate", "indic", "hindi", "english"]
+requires-python = ">=3.6"
+dependencies = [
+    "tqdm",
+    "func-timeout",
+    "tensorflow==2.18.0",
+]
+
+[project.optional-dependencies]
+dev = ["check-manifest"]
+test = ["coverage", "tox"]
+
+[project.urls]
+Homepage = "https://github.com/in-rolls/indicate"
+Repository = "https://github.com/in-rolls/indicate"
+
+[project.scripts]
+hindi2english = "indicate.transliterate:main"
+
+[tool.setuptools]
+packages = {find = {exclude = ["data", "docs", "tests", "scripts"]}}
+
+
+[tool.setuptools.package-data]
+indicate = [
+    "data/model/hindi_to_english/saved_weights/encoder.weights.h5",
+    "data/model/hindi_to_english/saved_weights/decoder.weights.h5",
+    "data/model/hindi_to_english/hindi_tokens.json",
+    "data/model/hindi_to_english/english_tokens.json",
+    "notebooks/*.ipynb",
+]
