@@ -3,6 +3,7 @@ Indicate: Transliterate Indic Languages to English
 ==================================================
 
 .. image:: https://notarypy.soodoku.workers.dev/badge/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl
+    :target: https://pypi.org/integrity/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl/provenance
 .. image:: https://img.shields.io/pypi/v/indicate.svg
     :target: https://pypi.python.org/pypi/indicate
 .. image:: https://readthedocs.org/projects/indicate/badge/?version=latest
