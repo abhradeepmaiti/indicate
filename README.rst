@@ -2,8 +2,10 @@
 Indicate: Transliterate Indic Languages to English
 ==================================================
 
-.. image:: https://app.travis-ci.com/in-rolls/indicate.svg?branch=master
-    :target: https://travis-ci.org/in-rolls/indicate
+https://notarypy.soodoku.workers.dev/badge/indicate/0.21.0/indicate-0.21.0-py3-none-any.whl
+
+.. image:: https://notarypy.soodoku.workers.dev/badge/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl
+
 .. image:: https://img.shields.io/pypi/v/indicate.svg
     :target: https://pypi.python.org/pypi/indicate
 .. image:: https://readthedocs.org/projects/indicate/badge/?version=latest
