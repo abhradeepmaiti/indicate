@@ -1,5 +1,6 @@
-import json
 import datetime
+import json
+
 import requests
 from espncricinfo.match import Match
 
@@ -19,7 +20,9 @@ with open("all-matches.json", "r") as matches_file:
         if datetime.datetime(y, m, d) > datetime.datetime(2021, 4, 8):
             print(match_id)
             r = requests.get(match.match_url)
-            hindi_url = r.url.replace("/series/", "/hindi/series/").replace("live-cricket-score", "full-scorecard")
+            hindi_url = r.url.replace("/series/", "/hindi/series/").replace(
+                "live-cricket-score", "full-scorecard"
+            )
             r = requests.get(hindi_url)
             if r.status_code == 404:
                 hindi_url = None

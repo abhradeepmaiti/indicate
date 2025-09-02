@@ -1,52 +1,62 @@
 import json
+from typing import Any, List, Optional, Tuple
+
 from .logging import get_logger
-from pkg_resources import resource_filename
+
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 
 import tensorflow as tf
+from func_timeout import FunctionTimedOut, func_timeout
 
-from .encoder import Encoder
 from .decoder import Decoder
+from .encoder import Encoder
 from .utils import translate
-
-from func_timeout import func_timeout, FunctionTimedOut
-
 
 logger = get_logger()
 
 
-class HindiToEnglish():
-    MODELFN = "data/model/hindi_to_english/saved_weights/"
-    INPUT_VOCAB = "data/model/hindi_to_english/hindi_tokens.json"
-    TARGET_VOCAB = "data/model/hindi_to_english/english_tokens.json"
+class HindiToEnglish:
+    MODELFN: str = "data/model/hindi_to_english/saved_weights/"
+    INPUT_VOCAB: str = "data/model/hindi_to_english/hindi_tokens.json"
+    TARGET_VOCAB: str = "data/model/hindi_to_english/english_tokens.json"
 
-    embedding_dim = 256
-    units = 1024
-    BATCH_SIZE = 64
-    BUFFER_SIZE = 120000
+    embedding_dim: int = 256
+    units: int = 1024
+    BATCH_SIZE: int = 64
+    BUFFER_SIZE: int = 120000
 
-    max_length_input = 47
-    max_length_output = 173
-    START_TOKEN = "^"
-    END_TOKEN = "$"
+    max_length_input: int = 47
+    max_length_output: int = 173
+    START_TOKEN: str = "^"
+    END_TOKEN: str = "$"
 
-    weights_loaded = False
+    _instance: Optional['HindiToEnglish'] = None
+    _weights_loaded: bool = False
 
-    input_lang_tokenizer = None
-    target_lang_tokenizer = None
-    encoder = None
-    decoder = None
+    input_lang_tokenizer: Optional[Any] = None
+    target_lang_tokenizer: Optional[Any] = None
+    encoder: Optional[Encoder] = None
+    decoder: Optional[Decoder] = None
 
-    @classmethod
-    def get_model_path(cls):
-        return resource_filename(__name__, cls.MODELFN)
-
-    @classmethod
-    def get_input_vocab(cls):
-        return resource_filename(__name__, cls.INPUT_VOCAB)
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     @classmethod
-    def get_target_vocab(cls):
-        return resource_filename(__name__, cls.TARGET_VOCAB)
+    def get_model_path(cls) -> str:
+        return str(files(__package__) / cls.MODELFN)
+
+    @classmethod
+    def get_input_vocab(cls) -> str:
+        return str(files(__package__) / cls.INPUT_VOCAB)
+
+    @classmethod
+    def get_target_vocab(cls) -> str:
+        return str(files(__package__) / cls.TARGET_VOCAB)
 
     @classmethod
     def transliterate(cls, input: str) -> str:
@@ -57,48 +67,70 @@ class HindiToEnglish():
             input (str): Hindi text
         Returns:
             output (str): English text
+        Raises:
+            ValueError: If input is empty or not a string
+            RuntimeError: If model loading fails
         """
+        if not isinstance(input, str):
+            raise ValueError("Input must be a string")
+        if not input.strip():
+            raise ValueError("Input cannot be empty")
 
-        if not cls.weights_loaded:
-            cls.model_path = cls.get_model_path()
-            cls.input_vocab = cls.get_input_vocab()
-            cls.target_vocab = cls.get_target_vocab()
+        if not cls._weights_loaded:
+            try:
+                cls.model_path = cls.get_model_path()
+                cls.input_vocab = cls.get_input_vocab()
+                cls.target_vocab = cls.get_target_vocab()
 
-            with open(cls.get_input_vocab(), "r", encoding="utf-8") as f: 
-                cls.input_lang_tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
+                with open(cls.get_input_vocab(), "r", encoding="utf-8") as f:
+                    cls.input_lang_tokenizer = (
+                        tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
+                    )
 
-            with open(cls.get_target_vocab(), "r", encoding="utf-8") as f: 
-                cls.target_lang_tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
+                with open(cls.get_target_vocab(), "r", encoding="utf-8") as f:
+                    cls.target_lang_tokenizer = (
+                        tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
+                    )
 
-            vocab_inp_size = len(cls.input_lang_tokenizer.word_index) + 1
-            vocab_tar_size = len(cls.target_lang_tokenizer.word_index) + 1
+                vocab_inp_size = len(cls.input_lang_tokenizer.word_index) + 1
+                vocab_tar_size = len(cls.target_lang_tokenizer.word_index) + 1
 
-            cls.encoder = Encoder(vocab_inp_size, cls.embedding_dim, cls.units, cls.BATCH_SIZE)
-            cls.decoder = Decoder(
-                vocab_tar_size,
-                cls.embedding_dim,
-                cls.units,
-                cls.BATCH_SIZE,
-                cls.max_length_input,
-                cls.max_length_output,
-                "luong",
-            )
+                cls.encoder = Encoder(
+                    vocab_inp_size, cls.embedding_dim, cls.units, cls.BATCH_SIZE
+                )
+                cls.decoder = Decoder(
+                    vocab_tar_size,
+                    cls.embedding_dim,
+                    cls.units,
+                    cls.BATCH_SIZE,
+                    cls.max_length_input,
+                    cls.max_length_output,
+                    "luong",
+                )
 
-            # This is needed to load waits from checkpoint
-            example_input_batch = tf.random.uniform(shape=[cls.BATCH_SIZE, cls.max_length_input])
-            sample_hidden = cls.encoder.initialize_hidden_state()
-            sample_output, sample_h, sample_c = cls.encoder(example_input_batch, sample_hidden)
+                # This is needed to load waits from checkpoint
+                example_input_batch = tf.random.uniform(
+                    shape=[cls.BATCH_SIZE, cls.max_length_input]
+                )
+                sample_hidden = cls.encoder.initialize_hidden_state()
+                sample_output, sample_h, sample_c = cls.encoder(
+                    example_input_batch, sample_hidden
+                )
 
-            sample_x = tf.random.uniform((cls.BATCH_SIZE, cls.max_length_output))
-            initial_state = cls.decoder.build_initial_state(cls.BATCH_SIZE, [sample_h, sample_c])
-            cls.decoder(sample_x, initial_state, sample_output)
+                sample_x = tf.random.uniform((cls.BATCH_SIZE, cls.max_length_output))
+                initial_state = cls.decoder.build_initial_state(
+                    cls.BATCH_SIZE, [sample_h, sample_c]
+                )
+                cls.decoder(sample_x, initial_state, sample_output)
 
-            logger.debug(f"Restoring model weights from {cls.model_path}")
-            # restore weights from checkpoint
-            cls.encoder.load_weights(f"{cls.model_path}/encoder.weights.h5")
-            cls.decoder.load_weights(f"{cls.model_path}/decoder.weights.h5")
+                logger.debug(f"Restoring model weights from {cls.model_path}")
+                # restore weights from checkpoint
+                cls.encoder.load_weights(f"{cls.model_path}/encoder.weights.h5")
+                cls.decoder.load_weights(f"{cls.model_path}/decoder.weights.h5")
 
-            cls.weights_loaded = True
+                cls._weights_loaded = True
+            except Exception as e:
+                raise RuntimeError(f"Failed to load model: {e}")
 
         # Predictions
         # this is needed because sometimes BasicDecoder is going into loop
@@ -130,7 +162,9 @@ class HindiToEnglish():
 
                 logger.debug(f"Model predicted {target}")
             except FunctionTimedOut as fex:
-                logger.error(f"Not able to transliterate {input} within 10 seconds, exiting with {fex}")
+                logger.error(
+                    f"Not able to transliterate {input} within 10 seconds, exiting with {fex}"
+                )
             except Exception as exe:
                 logger.error(f"Not able to transliterate {input} due to {exe}")
             output.append(target)
