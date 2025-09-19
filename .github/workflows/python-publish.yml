@@ -9,32 +9,46 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Likely Test'
+        description: 'Reason for manual publish'
         required: false
         default: 'Manual build'
+        type: string
+
 jobs:
   publish:
+    name: Publish to PyPI
     runs-on: ubuntu-latest
+    environment: 
+      name: pypi
+      url: https://pypi.org/p/indicate
 
     permissions:
-      id-token: write  # required for trusted publishing
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+      contents: read   # this permission is required for checkout
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install build & publish tools
+      - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build twine
+          pip install build
 
       - name: Build package
-        run: |
-          python -m build
+        run: python -m build
 
-      - name: Publish to PyPI
+      - name: Verify package
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+
+      - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
