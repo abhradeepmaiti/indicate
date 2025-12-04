@@ -2,9 +2,10 @@
 """
 Modern CLI for the indicate package using Click.
 """
+from __future__ import annotations
+
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 
@@ -44,11 +45,11 @@ def cli(ctx: click.Context) -> None:
     help='Suppress progress output'
 )
 def hindi2english(
-    text: Optional[str],
-    input_file: Optional[click.File],
-    output_file: Optional[click.File], 
+    text: str | None,
+    input_file: click.File | None,
+    output_file: click.File | None, 
     batch: bool,
-    quiet: bool
+    quiet: bool,
 ) -> None:
     """Transliterate Hindi text to English.
     
@@ -115,8 +116,8 @@ def hindi2english(
 
 def _process_batch(
     input_file: click.File,
-    output_file: Optional[click.File],
-    quiet: bool
+    output_file: click.File | None,
+    quiet: bool,
 ) -> None:
     """Process input file line by line."""
     lines = input_file.readlines()
@@ -177,7 +178,7 @@ def info() -> None:
 
 
 # Legacy entry point for backward compatibility
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     """Legacy entry point for backward compatibility."""
     import sys
     if argv is None:

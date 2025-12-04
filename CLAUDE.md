@@ -10,14 +10,26 @@ Indicate is a Python package for transliterating Hindi text to English using a T
 
 ### Testing
 ```bash
-python -m unittest indicate.tests.test_010_hindi_translate
-python -m unittest discover indicate/tests/
+python -m unittest tests.test_010_hindi_translate
+python -m unittest discover tests/
 ```
 
 ### Build and Installation
 ```bash
-pip install -e .  # Install in development mode
-pip install .     # Regular installation
+uv sync           # Install dependencies with uv (recommended)
+uv build          # Build package
+pip install -e .  # Install in development mode (alternative)
+```
+
+### CLI Usage
+```bash
+# Modern Click-based CLI
+indicate hindi2english "राजशेखर चिंतालपति"
+indicate hindi2english --input file.txt --output result.txt
+indicate info
+
+# Legacy CLI (backward compatibility)
+hindi2english --type hin2eng --input "हिंदी"
 ```
 
 ### Documentation (Sphinx)
@@ -48,11 +60,13 @@ make clean        # Clean build artifacts
 - 10-second timeout per translation to prevent infinite loops
 
 ### Key Entry Points
-- CLI: `hindi2english` command (defined in pyproject.toml)
+- Modern CLI: `indicate` command with Click-based interface (defined in pyproject.toml)
+- Legacy CLI: `hindi2english` command for backward compatibility
 - API: `indicate.transliterate.hindi2english(text)` function
 - Main module: `indicate/__init__.py` exposes the transliteration function
 
 ## Dependencies
-- TensorFlow 2.18.0 (core ML framework)
-- func-timeout (prevents hanging translations)
-- tqdm (progress bars)
+- Click 8.0+ (modern CLI framework)
+- TensorFlow 2.13.0-2.16.0 (core ML framework)
+- func-timeout 4.3.0+ (prevents hanging translations)
+- tqdm 4.60.0+ (progress bars)

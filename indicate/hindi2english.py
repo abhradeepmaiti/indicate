@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import json
-from typing import Any, List, Optional, Tuple
-from importlib.resources import files
 import os
+from importlib.resources import files
+from typing import Any, Self
 
 from .logging import get_logger
 
@@ -30,15 +32,15 @@ class HindiToEnglish:
     START_TOKEN: str = "^"
     END_TOKEN: str = "$"
 
-    _instance: Optional['HindiToEnglish'] = None
+    _instance: HindiToEnglish | None = None
     _weights_loaded: bool = False
 
-    input_lang_tokenizer: Optional[Any] = None
-    target_lang_tokenizer: Optional[Any] = None
-    encoder: Optional[Encoder] = None
-    decoder: Optional[Decoder] = None
+    input_lang_tokenizer: Any | None = None
+    target_lang_tokenizer: Any | None = None
+    encoder: Encoder | None = None
+    decoder: Decoder | None = None
 
-    def __new__(cls):
+    def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

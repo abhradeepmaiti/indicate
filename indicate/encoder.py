@@ -1,4 +1,6 @@
-from typing import Any, List, Tuple
+from __future__ import annotations
+
+from typing import Any
 
 import tensorflow as tf
 
