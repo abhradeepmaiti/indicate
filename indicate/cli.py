@@ -17,7 +17,7 @@ def _get_version() -> str:
     """Get package version from metadata."""
     try:
         return metadata.version("indicate")
-    except metadata.PackageNotFoundError:
+    except Exception:
         return "unknown"
 
 

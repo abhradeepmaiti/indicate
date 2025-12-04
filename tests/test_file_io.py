@@ -117,8 +117,9 @@ class TestFileIO(unittest.TestCase):
         
         try:
             result = self.runner.invoke(cli, ['hindi2english', '--input', temp_file])
-            self.assertEqual(result.exit_code, 0)
-            # Should handle empty file gracefully
+            self.assertEqual(result.exit_code, 1)
+            # Should fail gracefully for empty file with appropriate message
+            self.assertIn("No text to transliterate", result.output)
         finally:
             Path(temp_file).unlink()
     

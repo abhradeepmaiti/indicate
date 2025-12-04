@@ -92,10 +92,10 @@ class TestEdgeCases(unittest.TestCase):
     
     def test_non_string_input(self):
         """Test that non-string input raises appropriate error."""
-        with self.assertRaises((TypeError, AttributeError)):
+        with self.assertRaises(ValueError):
             transliterate.hindi2english(123)
         
-        with self.assertRaises((TypeError, AttributeError)):
+        with self.assertRaises(ValueError):
             transliterate.hindi2english(['हिंदी'])
     
     def test_extremely_long_input(self):

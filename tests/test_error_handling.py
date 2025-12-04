@@ -18,6 +18,11 @@ class TestErrorHandling(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
     
+    def tearDown(self):
+        """Clean up any patches or mocks."""
+        # Ensure any patches are stopped
+        patch.stopall()
+    
     def test_version_detection_fallback(self):
         """Test version detection fallback when package not found."""
         with patch('indicate.cli.metadata.version') as mock_version:

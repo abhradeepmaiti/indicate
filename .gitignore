@@ -14,3 +14,4 @@ dist/
 past/
 .venv
 *.egg-info*
+coverage.xml

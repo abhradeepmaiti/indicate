@@ -142,6 +142,10 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
+filterwarnings = [
+    "ignore:.*PyType_Spec with a metaclass.*:DeprecationWarning",
+    "ignore:.*deprecated and will no longer be allowed in Python 3.14.*:DeprecationWarning",
+]
 
 # mypy configuration
 [tool.mypy]
