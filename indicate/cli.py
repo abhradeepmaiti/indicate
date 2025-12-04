@@ -5,6 +5,7 @@ Modern CLI for the indicate package using Click.
 from __future__ import annotations
 
 import sys
+from importlib import metadata
 from pathlib import Path
 
 import click
@@ -12,8 +13,16 @@ import click
 from .hindi2english import HindiToEnglish
 
 
+def _get_version() -> str:
+    """Get package version from metadata."""
+    try:
+        return metadata.version("indicate")
+    except metadata.PackageNotFoundError:
+        return "unknown"
+
+
 @click.group()
-@click.version_option()
+@click.version_option(version=_get_version())
 @click.pass_context
 def cli(ctx: click.Context) -> None:
     """Indicate: Transliterations to/from Indian languages.

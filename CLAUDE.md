@@ -66,6 +66,7 @@ make clean        # Clean build artifacts
 - Main module: `indicate/__init__.py` exposes the transliteration function
 
 ## Dependencies
+- Python 3.11+ (modern Python with enhanced type hints)
 - Click 8.0+ (modern CLI framework)
 - TensorFlow 2.13.0-2.16.0 (core ML framework)
 - func-timeout 4.3.0+ (prevents hanging translations)

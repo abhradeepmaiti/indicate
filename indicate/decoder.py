@@ -47,7 +47,7 @@ class Decoder(tf.keras.Model):
         self.attention_mechanism = self.build_attention_mechanism(None)
 
     def build_attention_mechanism(
-        self, memory: Optional[tf.Tensor]
+        self, memory: tf.Tensor | None
     ) -> tf.keras.layers.Layer:
         if self.attention_type == "bahdanau":
             return tf.keras.layers.AdditiveAttention()
@@ -57,9 +57,9 @@ class Decoder(tf.keras.Model):
     def call(
         self,
         inputs: tf.Tensor,
-        initial_state: List[tf.Tensor],
+        initial_state: list[tf.Tensor],
         encoder_outputs: tf.Tensor,
-    ) -> Tuple[tf.Tensor, Tuple[tf.Tensor, tf.Tensor], tf.Tensor]:
+    ) -> tuple[tf.Tensor, tuple[tf.Tensor, tf.Tensor], tf.Tensor]:
         # Get the embeddings of the inputs
         x = self.embedding(inputs)
 

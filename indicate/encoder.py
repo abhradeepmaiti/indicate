@@ -23,13 +23,13 @@ class Encoder(tf.keras.Model):
         )
 
     def call(
-        self, x: tf.Tensor, hidden: List[tf.Tensor], training: bool = None
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        self, x: tf.Tensor, hidden: list[tf.Tensor], training: bool | None = None
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         x = self.embedding(x)
         output, h, c = self.lstm_layer(x, initial_state=hidden)
         return output, h, c
 
-    def initialize_hidden_state(self) -> List[tf.Tensor]:
+    def initialize_hidden_state(self) -> list[tf.Tensor]:
         return [
             tf.zeros((self.batch_sz, self.enc_units)),
             tf.zeros((self.batch_sz, self.enc_units)),

@@ -18,7 +18,7 @@ To overcome the fact that there isn't one standard way of transliteration, we pr
 
 We strongly recommend installing `indicate` inside a Python virtual environment (see [venv documentation](https://docs.python.org/3/library/venv.html#creating-virtual-environments))
 
-**Requirements:** Python 3.10 or higher
+**Requirements:** Python 3.11 or higher
 
 ```bash
 pip install indicate
