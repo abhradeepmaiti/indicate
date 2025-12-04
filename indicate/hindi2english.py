@@ -1,6 +1,7 @@
 import json
 from typing import Any, List, Optional, Tuple
 from importlib.resources import files
+import os
 
 from .logging import get_logger
 
@@ -44,15 +45,21 @@ class HindiToEnglish:
 
     @classmethod
     def get_model_path(cls) -> str:
-        return str(files(__package__) / cls.MODELFN)
+        package_dir = str(files(__package__))
+        root_dir = os.path.dirname(package_dir)
+        return os.path.join(root_dir, cls.MODELFN)
 
     @classmethod
     def get_input_vocab(cls) -> str:
-        return str(files(__package__) / cls.INPUT_VOCAB)
+        package_dir = str(files(__package__))
+        root_dir = os.path.dirname(package_dir)
+        return os.path.join(root_dir, cls.INPUT_VOCAB)
 
     @classmethod
     def get_target_vocab(cls) -> str:
-        return str(files(__package__) / cls.TARGET_VOCAB)
+        package_dir = str(files(__package__))
+        root_dir = os.path.dirname(package_dir)
+        return os.path.join(root_dir, cls.TARGET_VOCAB)
 
     @classmethod
     def transliterate(cls, input: str) -> str:

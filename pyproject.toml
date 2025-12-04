@@ -69,6 +69,8 @@ exclude = [
     "/.venv",
     "/docs",
     "/tests",
+    "/notebooks",
+    "/data",
     "/.gitignore",
     "/.pre-commit-config.yaml",
 ]
@@ -89,6 +91,7 @@ exclude = [
     "docs",
     ".eggs",
     "notebooks",
+    "data",
 ]
 
 [tool.ruff.lint]
@@ -129,7 +132,7 @@ known-first-party = ["indicate"]
 # Pytest configuration
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["indicate/tests"]
+testpaths = ["tests"]
 python_files = "test_*.py"
 addopts = [
     "-ra",

@@ -39,7 +39,7 @@ make clean        # Clean build artifacts
 ### Model Architecture
 - Encoder-decoder with Luong attention mechanism
 - Embedding dimension: 256, LSTM units: 1024
-- Pre-trained weights stored in `indicate/data/model/hindi_to_english/saved_weights/`
+- Pre-trained weights stored in `data/model/hindi_to_english/saved_weights/`
 - Tokenizers for Hindi and English stored as JSON files
 
 ### Data Pipeline
