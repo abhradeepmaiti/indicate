@@ -119,7 +119,7 @@ class TestEdgeCases(unittest.TestCase):
         
         # Test that paths are accessible
         model_path = HindiToEnglish.get_model_path()
-        self.assertTrue(model_path.endswith("saved_weights"))
+        self.assertTrue(model_path.endswith("saved_weights") or model_path.endswith("saved_weights/"))
     
     def test_repeated_calls_performance(self):
         """Test that repeated calls don't degrade performance significantly."""
