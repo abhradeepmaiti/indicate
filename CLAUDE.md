@@ -68,6 +68,6 @@ make clean        # Clean build artifacts
 ## Dependencies
 - Python 3.11+ (modern Python with enhanced type hints)
 - Click 8.0+ (modern CLI framework)
-- TensorFlow 2.13.0-2.16.0 (core ML framework)
+- TensorFlow 2.16.0-2.18.0 (core ML framework with Python 3.12 support)
 - func-timeout 4.3.0+ (prevents hanging translations)
 - tqdm 4.60.0+ (progress bars)
