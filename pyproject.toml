@@ -17,13 +17,12 @@ classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
 ]
 keywords = ["transliterate", "indic", "hindi", "english"]
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "click>=8.0.0",
     "tqdm>=4.60.0",
@@ -31,7 +30,7 @@ dependencies = [
     "tensorflow>=2.16.0,<2.18.0",  # Pin to version with Python 3.12 support
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 docs = [
     "sphinx>=7.0",
     "furo>=2024.1.29",
@@ -39,8 +38,6 @@ docs = [
     "sphinx-copybutton>=0.5",
     "myst-parser>=2.0",
 ]
-
-[dependency-groups]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -81,7 +78,7 @@ source-exclude = [
 # Ruff configuration
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py311"
 exclude = [
     ".git",
     "__pycache__",
@@ -121,7 +118,7 @@ known-first-party = ["indicate"]
 # Black configuration
 [tool.black]
 line-length = 88
-target-version = ["py310", "py311", "py312"]
+target-version = ["py311", "py312"]
 
 # isort configuration
 [tool.isort]
@@ -148,7 +145,7 @@ markers = [
 
 # mypy configuration
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 check_untyped_defs = true
