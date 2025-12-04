@@ -18,33 +18,32 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.1.4
         with:
-          python-version: ${{ matrix.python-version }}
+          version: "latest"
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev,test]
+          uv sync --group dev --group test
 
       - name: Run tests
-        run: python -m pytest -v
+        run: uv run python -m pytest -v
   yamllint:
     name: Yaml Linting
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10']
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7.1.4
       with:
-        python-version: ${{ matrix.python-version }}
+        version: "latest"
+    - name: Set up Python
+      run: uv python install 3.10
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install yamllint
+        uv tool install yamllint
     - name: Run yamllint
-      run: yamllint */
+      run: uvx yamllint */

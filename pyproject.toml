@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling>=1.21.1"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 name = "indicate"
 version = "0.3.1"
 description = "Transliterations to/from Indian languages"
-readme = "README.rst"
+readme = "README.md"
 authors = [
     {name = "Rajashekar Chintalapati", email = "rajshekar.ch@gmail.com"},
     {name = "Gaurav Sood", email = "gsood07@gmail.com"}
@@ -25,6 +25,7 @@ classifiers = [
 keywords = ["transliterate", "indic", "hindi", "english"]
 requires-python = ">=3.10,<3.13"
 dependencies = [
+    "click>=8.0.0",
     "tqdm>=4.60.0",
     "func-timeout>=4.3.0",
     "tensorflow>=2.13.0,<2.16.0",  # Pin to compatible version range
@@ -61,12 +62,14 @@ Homepage = "https://github.com/in-rolls/indicate"
 Repository = "https://github.com/in-rolls/indicate"
 
 [project.scripts]
+indicate = "indicate.cli:cli"
 hindi2english = "indicate.transliterate:main"
 
-[tool.hatch.build]
-exclude = [
+[tool.uv.build-backend]
+module-root = ""
+source-exclude = [
     "/.github",
-    "/.venv",
+    "/.venv", 
     "/docs",
     "/tests",
     "/notebooks",
@@ -74,9 +77,6 @@ exclude = [
     "/.gitignore",
     "/.pre-commit-config.yaml",
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = ["indicate"]
 
 # Ruff configuration
 [tool.ruff]
