@@ -18,9 +18,9 @@ logger = get_logger()
 
 
 class HindiToEnglish:
-    MODELFN: str = "data/model/hindi_to_english/saved_weights/"
-    INPUT_VOCAB: str = "data/model/hindi_to_english/hindi_tokens.json"
-    TARGET_VOCAB: str = "data/model/hindi_to_english/english_tokens.json"
+    MODELFN: str = "data/hindi_to_english/saved_weights/"
+    INPUT_VOCAB: str = "data/hindi_to_english/hindi_tokens.json"
+    TARGET_VOCAB: str = "data/hindi_to_english/english_tokens.json"
 
     embedding_dim: int = 256
     units: int = 1024
@@ -48,20 +48,17 @@ class HindiToEnglish:
     @classmethod
     def get_model_path(cls) -> str:
         package_dir = str(files(__package__))
-        root_dir = os.path.dirname(package_dir)
-        return os.path.join(root_dir, cls.MODELFN)
+        return os.path.join(package_dir, cls.MODELFN)
 
     @classmethod
     def get_input_vocab(cls) -> str:
         package_dir = str(files(__package__))
-        root_dir = os.path.dirname(package_dir)
-        return os.path.join(root_dir, cls.INPUT_VOCAB)
+        return os.path.join(package_dir, cls.INPUT_VOCAB)
 
     @classmethod
     def get_target_vocab(cls) -> str:
         package_dir = str(files(__package__))
-        root_dir = os.path.dirname(package_dir)
-        return os.path.join(root_dir, cls.TARGET_VOCAB)
+        return os.path.join(package_dir, cls.TARGET_VOCAB)
 
     @classmethod
     def transliterate(cls, input: str) -> str:
