@@ -14,14 +14,14 @@ from indicate.hindi2english import HindiToEnglish
 class TestEdgeCases(unittest.TestCase):
     def test_empty_string(self):
         """Test that empty string is handled gracefully."""
-        with self.assertRaises(ValueError):
-            transliterate.hindi2english("")
+        result = transliterate.hindi2english("")
+        self.assertEqual(result, "")
     
     def test_whitespace_only(self):
         """Test whitespace-only input."""
         result = transliterate.hindi2english("   ")
-        self.assertIsInstance(result, str)
-        # Should handle whitespace gracefully
+        self.assertEqual(result, "")
+        # Whitespace-only input returns empty string
     
     def test_single_character(self):
         """Test single character input."""

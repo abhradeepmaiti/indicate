@@ -70,13 +70,17 @@ class HindiToEnglish:
         Returns:
             output (str): English text
         Raises:
-            ValueError: If input is empty or not a string
+            TypeError: If input is None
+            ValueError: If input is not a string
             RuntimeError: If model loading fails
         """
+        if input is None:
+            raise TypeError("Input cannot be None")
         if not isinstance(input, str):
             raise ValueError("Input must be a string")
         if not input.strip():
-            raise ValueError("Input cannot be empty")
+            # Handle whitespace-only input gracefully
+            return ""
 
         if not cls._weights_loaded:
             try:
