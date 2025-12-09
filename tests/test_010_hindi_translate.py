@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Test Hindi to English translation
@@ -14,7 +13,7 @@ class TestHindiToEnglish(unittest.TestCase):
     def test_hindi_to_english(self):
         test_inputs = ["राजशेखर चिंतालपति", "गौरव सूद"]
         test_outputs = ["rajshekhar chintalpati", "gaurav sood"]
-        for hindi, english in zip(test_inputs, test_outputs):
+        for hindi, english in zip(test_inputs, test_outputs, strict=False):
             self.assertEqual(HindiToEnglish.transliterate(hindi), english)
 
 

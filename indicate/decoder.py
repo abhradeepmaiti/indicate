@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import tensorflow as tf
 
 from .logging import get_logger
@@ -20,7 +18,7 @@ class Decoder(tf.keras.Model):
         max_length_output: int,
         attention_type: str = "luong",
     ) -> None:
-        super(Decoder, self).__init__()
+        super().__init__()
         self.batch_sz = batch_sz
         self.dec_units = dec_units
         self.attention_type = attention_type
@@ -81,7 +79,7 @@ class Decoder(tf.keras.Model):
         return outputs, (state_h, state_c), attention_weights
 
     def build_initial_state(
-        self, batch_sz: int, encoder_state: List[tf.Tensor]
-    ) -> List[tf.Tensor]:
+        self, batch_sz: int, encoder_state: list[tf.Tensor]
+    ) -> list[tf.Tensor]:
         hidden_state, cell_state = encoder_state
         return [hidden_state, cell_state]

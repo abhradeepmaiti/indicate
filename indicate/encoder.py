@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import tensorflow as tf
 
 
@@ -9,7 +7,7 @@ class Encoder(tf.keras.Model):
     def __init__(
         self, vocab_size: int, embedding_dim: int, enc_units: int, batch_sz: int
     ) -> None:
-        super(Encoder, self).__init__()
+        super().__init__()
         self.batch_sz = batch_sz
         self.enc_units = enc_units
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)

@@ -2,6 +2,7 @@
 """
 Test CLI commands for the indicate package.
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -16,96 +17,106 @@ from indicate.cli import cli, main
 class TestCLI(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
-    
+
     def test_cli_version(self):
         """Test that version command works."""
-        result = self.runner.invoke(cli, ['--version'])
+        result = self.runner.invoke(cli, ["--version"])
         self.assertEqual(result.exit_code, 0)
         # Version should be present, but due to metadata caching may not be 0.4.0 immediately
         self.assertTrue(any(c.isdigit() for c in result.output))
-    
+
     def test_hindi2english_basic(self):
         """Test basic hindi2english command with text argument."""
-        result = self.runner.invoke(cli, ['hindi2english', 'हिंदी'])
+        result = self.runner.invoke(cli, ["hindi2english", "हिंदी"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn('hindi', result.output.lower())
-    
+        self.assertIn("hindi", result.output.lower())
+
     def test_hindi2english_stdin(self):
         """Test hindi2english with stdin input."""
-        result = self.runner.invoke(cli, ['hindi2english'], input='गौरव')
+        result = self.runner.invoke(cli, ["hindi2english"], input="गौरव")
         self.assertEqual(result.exit_code, 0)
-        self.assertIn('gaurav', result.output.lower())
-    
+        self.assertIn("gaurav", result.output.lower())
+
     def test_hindi2english_file_input(self):
         """Test hindi2english with file input."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-            f.write('राजशेखर\n')
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
+            f.write("राजशेखर\n")
             temp_file = f.name
-        
+
         try:
-            result = self.runner.invoke(cli, ['hindi2english', '--input', temp_file])
+            result = self.runner.invoke(cli, ["hindi2english", "--input", temp_file])
             self.assertEqual(result.exit_code, 0)
-            self.assertIn('rajshekhar', result.output.lower())
+            self.assertIn("rajshekhar", result.output.lower())
         finally:
             Path(temp_file).unlink()
-    
+
     def test_hindi2english_file_output(self):
         """Test hindi2english with file output."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as outfile:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as outfile:
             temp_output = outfile.name
-        
+
         try:
-            result = self.runner.invoke(cli, ['hindi2english', 'हिंदी', '--output', temp_output])
+            result = self.runner.invoke(
+                cli, ["hindi2english", "हिंदी", "--output", temp_output]
+            )
             self.assertEqual(result.exit_code, 0)
-            
-            with open(temp_output, 'r', encoding='utf-8') as f:
+
+            with open(temp_output, encoding="utf-8") as f:
                 output_content = f.read()
-            self.assertIn('hindi', output_content.lower())
+            self.assertIn("hindi", output_content.lower())
         finally:
             Path(temp_output).unlink()
-    
+
     def test_hindi2english_batch_mode(self):
         """Test hindi2english with batch processing."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-            f.write('हिंदी\nगौरव\n')
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
+            f.write("हिंदी\nगौरव\n")
             temp_file = f.name
-        
+
         try:
-            result = self.runner.invoke(cli, ['hindi2english', '--input', temp_file, '--batch'])
+            result = self.runner.invoke(
+                cli, ["hindi2english", "--input", temp_file, "--batch"]
+            )
             self.assertEqual(result.exit_code, 0)
-            output_lines = result.output.strip().split('\n')
+            output_lines = result.output.strip().split("\n")
             self.assertEqual(len(output_lines), 2)
-            self.assertIn('hindi', output_lines[0].lower())
-            self.assertIn('gaurav', output_lines[1].lower())
+            self.assertIn("hindi", output_lines[0].lower())
+            self.assertIn("gaurav", output_lines[1].lower())
         finally:
             Path(temp_file).unlink()
-    
+
     def test_hindi2english_quiet_mode(self):
         """Test hindi2english with quiet mode."""
-        result = self.runner.invoke(cli, ['hindi2english', 'हिंदी', '--quiet'])
+        result = self.runner.invoke(cli, ["hindi2english", "हिंदी", "--quiet"])
         self.assertEqual(result.exit_code, 0)
         # In quiet mode, should have minimal output
-        lines = [line for line in result.output.strip().split('\n') if line.strip()]
+        lines = [line for line in result.output.strip().split("\n") if line.strip()]
         self.assertEqual(len(lines), 1)  # Just the translation result
-    
+
     def test_info_command(self):
         """Test the info command."""
-        result = self.runner.invoke(cli, ['info'])
+        result = self.runner.invoke(cli, ["info"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn('Indicate', result.output)
-        self.assertIn('Model Architecture', result.output)
-    
+        self.assertIn("Indicate", result.output)
+        self.assertIn("Model Architecture", result.output)
+
     def test_legacy_cli_backward_compatibility(self):
         """Test that legacy CLI arguments still work."""
         # Test the main function which handles legacy arguments
-        result = main(['--type', 'hin2eng', '--input', 'हिंदी'])
+        result = main(["--type", "hin2eng", "--input", "हिंदी"])
         self.assertEqual(result, 0)
-    
+
     def test_hindi2english_help(self):
         """Test that help command works."""
-        result = self.runner.invoke(cli, ['hindi2english', '--help'])
+        result = self.runner.invoke(cli, ["hindi2english", "--help"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn('Transliterate Hindi text to English', result.output)
+        self.assertIn("Transliterate Hindi text to English", result.output)
 
 
 if __name__ == "__main__":

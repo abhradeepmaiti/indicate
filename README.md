@@ -1,4 +1,4 @@
-# Indicate: Transliterate Indic Languages to English
+# Indicate: Transliterate Indic Languages with TensorFlow and LLMs
 
 [![Notary Badge](https://notarypy.soodoku.workers.dev/badge/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl)](https://pypi.org/integrity/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl/provenance)
 [![PyPI Version](https://img.shields.io/pypi/v/indicate.svg)](https://pypi.python.org/pypi/indicate)
@@ -6,13 +6,20 @@
 [![Tests](https://github.com/in-rolls/indicate/workflows/test/badge.svg)](https://github.com/in-rolls/indicate/actions?query=workflow%3Atest)
 [![Documentation](https://img.shields.io/badge/docs-github.io-blue)](https://in-rolls.github.io/indicate/)
 
-Transliterations to/from Indian languages are still generally low quality. One problem is access to data. Another is that there is no standard transliteration.
+**Indicate** provides high-quality transliteration between Indic languages and English using both traditional TensorFlow models and state-of-the-art LLMs (Large Language Models).
 
-For Hindi--English, we build novel dataset for names using the ESPNcricinfo. For instance, see [here](https://www.espncricinfo.com/hindi/series/pakistan-tour-of-england-2021-1239529/england-vs-pakistan-1st-odi-1239537/full-scorecard) for hindi version of the [english scorecard](https://www.espncricinfo.com/series/pakistan-tour-of-england-2021-1239529/england-vs-pakistan-1st-odi-1239537/full-scorecard).
+## 🚀 Features
 
-We also create a dataset from [election affidavits](https://affidavit.eci.gov.in/CandidateCustomFilter) and exploit the [Google Dakshina dataset](https://github.com/google-research-datasets/dakshina).
+- **🧠 Dual Backend Support**: Choose between TensorFlow models or LLM-based transliteration
+- **🌍 Multi-Language**: 12+ Indic languages (Hindi, Tamil, Telugu, Bengali, etc.)
+- **🔄 Bidirectional**: Supports both Indic→English and English→Indic transliteration
+- **🛡️ Production Ready**: Safe file handling, atomic writes, backup support
+- **📊 Structured Output**: Rich JSON format with metadata and error handling
+- **⚡ Batch Processing**: Efficient processing of large files with progress tracking
 
-To overcome the fact that there isn't one standard way of transliteration, we provide k-best transliterations.
+## 🎯 Supported Languages
+
+Hindi • Tamil • Telugu • Bengali • Gujarati • Kannada • Malayalam • Punjabi • Marathi • Odia • Urdu • Sanskrit ↔ English
 
 ## Install
 
@@ -24,99 +31,179 @@ We strongly recommend installing `indicate` inside a Python virtual environment 
 pip install indicate
 ```
 
-## Usage
+## 🔧 Quick Setup
 
-### Python API
+### For LLM-based transliteration (recommended):
+```bash
+pip install indicate
 
-```python
-from indicate import transliterate
-english_translated = transliterate.hindi2english("हिंदी")
-print(english_translated)
-# Output: hindi
+# Set your API key (choose one):
+export OPENAI_API_KEY=your-key
+export ANTHROPIC_API_KEY=your-key  
+export GOOGLE_API_KEY=your-key
 ```
 
-### Command Line Interface
+### For TensorFlow-only usage:
+```bash
+pip install indicate
+# No API key needed - uses pre-trained models
+```
 
-The package provides both modern and legacy CLI interfaces:
+## 🎯 Usage
 
-#### Modern CLI (Recommended)
+### 🧠 LLM-Based Transliteration (New!)
+
+The LLM backend provides higher accuracy and supports all Indic languages:
 
 ```bash
-# Basic usage
+# Simple transliteration (auto-detects Hindi)
+indicate llm "राजशेखर चिंतालपति"
+# Output: Rajashekar Chintalapati
+
+# Specify languages explicitly  
+indicate llm "முருகன்" --source tamil --target english
+# Output: Murugan
+
+# Between Indic languages
+indicate llm "नमस्ते" --source hindi --target tamil  
+# Output: நமஸ்தே
+
+# Safe batch processing with structured JSON output
+indicate llm --input names.txt --output results.json --format json --batch --backup
+
+# Dry run to preview changes
+indicate llm --input large_file.txt --dry-run
+```
+
+**Python API:**
+```python
+from indicate import IndicLLMTransliterator
+
+# Initialize for any language pair
+transliterator = IndicLLMTransliterator('hindi', 'english')
+result = transliterator.transliterate('राजशेखर चिंतालपति')
+print(result)  # Output: Rajashekar Chintalapati
+
+# Batch processing
+texts = ["राजेश", "गौरव", "प्रिया"]
+results = transliterator.transliterate_batch(texts)
+print(results)  # ['Rajesh', 'Gaurav', 'Priya']
+```
+
+### 🤖 TensorFlow Backend (Traditional)
+
+```bash
+# Hindi to English using TensorFlow model
 indicate hindi2english "राजशेखर चिंतालपति"
+# Output: rajashekar chintalapati
 
 # From file
 indicate hindi2english --input hindi.txt --output english.txt
 
-# From stdin
-echo "गौरव सूद" | indicate hindi2english
-
-# Batch processing for large files
-indicate hindi2english --input large_file.txt --batch --quiet
-
-# Get help
-indicate hindi2english --help
-
-# Package information
-indicate info
+# Batch processing
+indicate hindi2english --input large_file.txt --batch
 ```
 
-#### Legacy CLI (Backward Compatibility)
+**Python API:**
+```python
+from indicate import hindi2english
+result = hindi2english("हिंदी")
+print(result)  # Output: hindi
+```
+
+## 📊 JSON Output Format
+
+The LLM backend provides rich, structured output perfect for data processing:
+
+```json
+{
+  "metadata": {
+    "source_language": "hindi",
+    "target_language": "english", 
+    "timestamp": "2024-12-09T12:00:00Z",
+    "total_lines": 3,
+    "successful_lines": 3,
+    "failed_lines": 0,
+    "encoding": "utf-8"
+  },
+  "results": [
+    {
+      "line_number": 1,
+      "input_text": "राजेश कुमार",
+      "output_text": "Rajesh Kumar", 
+      "source_lang": "hindi",
+      "target_lang": "english",
+      "confidence": "high",
+      "processing_time": 1.2,
+      "timestamp": "2024-12-09T12:00:01Z"
+    }
+  ]
+}
+```
+
+## 🛡️ Safety Features
+
+- **🔒 Input/Output Validation**: Prevents accidental file overwrites
+- **⚛️ Atomic Writing**: Safe file operations using temporary files
+- **💾 Automatic Backups**: Optional timestamped backups of existing files
+- **🔄 Resume Support**: Resume interrupted batch operations
+- **👁️ Dry Run Mode**: Preview operations before execution
+
+## 🎛️ Advanced Usage
 
 ```bash
-# Still supported for backward compatibility
-hindi2english --type hin2eng --input "हिंदी"
+# Show few-shot examples being used
+indicate llm --show-examples --source bengali --target english
+
+# Resume interrupted batch job
+indicate llm --input large_file.txt --output results.txt --resume
+
+# Use specific LLM provider/model
+indicate llm "text" --provider anthropic --model claude-3-opus
+
+# Process JSON from previous results
+indicate llm --input results.json --source english --target hindi
 ```
 
-## Functions
+## 🔄 Backend Comparison
 
-We expose 1 function, which will take Hindi text and transliterate it to English.
+| Feature | TensorFlow Backend | LLM Backend |
+|---------|------------------|-------------|
+| **Languages** | Hindi ↔ English only | 12+ Indic languages ↔ English + Inter-Indic |
+| **Setup** | No API key needed | Requires LLM API key |
+| **Speed** | Very fast (local) | Moderate (API calls) |
+| **Accuracy** | Good for common words | Excellent for all types |
+| **Cost** | Free | Pay per API call |
+| **Offline** | ✅ Works offline | ❌ Requires internet |
+| **Batch Processing** | ✅ | ✅ with safety features |
 
-- **transliterate.hindi2english(input)**
-  - What it does: Converts given hindi text into English alphabet
-  - Output: Returns text in English
+## 🧪 Testing Locally
 
-## Testing Locally
-
-To test the package locally, follow these steps:
-
-1. **Clone the repository**:
+1. **Clone and install**:
    ```bash
    git clone https://github.com/in-rolls/indicate.git
    cd indicate
+   uv sync  # or pip install -e .
    ```
 
-2. **Install with uv (recommended)**:
+2. **Run tests**:
    ```bash
-   uv sync
-   ```
+   # All tests
+   python -m pytest
    
-   Or with pip:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -e .
+   # Specific tests
+   python -m pytest tests/test_llm_indic.py
+   python -m pytest tests/test_file_safety.py
    ```
 
-3. **Run tests**:
+3. **Test both backends**:
    ```bash
-   # Run all tests
-   python -m unittest discover tests/
-   
-   # Run specific test
-   python -m unittest tests.test_010_hindi_translate
-   ```
-
-4. **Test the transliteration**:
-   ```bash
-   # Modern CLI
+   # TensorFlow backend
    indicate hindi2english "हिंदी"
    
-   # Legacy CLI
-   hindi2english --type hin2eng --input "हिंदी"
-   
-   # Python usage
-   python -c "from indicate import transliterate; print(transliterate.hindi2english('हिंदी'))"
+   # LLM backend (set API key first)
+   export OPENAI_API_KEY=your-key
+   indicate llm "हिंदी"
    ```
 
 ## Data

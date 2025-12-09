@@ -5,13 +5,12 @@ import os
 from importlib.resources import files
 from typing import Any, Self
 
-from .logging import get_logger
-
 import tensorflow as tf
 from func_timeout import FunctionTimedOut, func_timeout
 
 from .decoder import Decoder
 from .encoder import Encoder
+from .logging import get_logger
 from .utils import translate
 
 logger = get_logger()
@@ -88,12 +87,12 @@ class HindiToEnglish:
                 cls.input_vocab = cls.get_input_vocab()
                 cls.target_vocab = cls.get_target_vocab()
 
-                with open(cls.get_input_vocab(), "r", encoding="utf-8") as f:
+                with open(cls.get_input_vocab(), encoding="utf-8") as f:
                     cls.input_lang_tokenizer = (
                         tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
                     )
 
-                with open(cls.get_target_vocab(), "r", encoding="utf-8") as f:
+                with open(cls.get_target_vocab(), encoding="utf-8") as f:
                     cls.target_lang_tokenizer = (
                         tf.keras.preprocessing.text.tokenizer_from_json(json.load(f))
                     )
@@ -136,7 +135,7 @@ class HindiToEnglish:
 
                 cls._weights_loaded = True
             except Exception as e:
-                raise RuntimeError(f"Failed to load model: {e}")
+                raise RuntimeError(f"Failed to load model: {e}") from e
 
         # Predictions
         # this is needed because sometimes BasicDecoder is going into loop

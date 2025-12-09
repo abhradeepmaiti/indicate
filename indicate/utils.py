@@ -66,7 +66,7 @@ def evaluate_sentence(
     outputs = []
 
     # Decoding loop
-    for t in range(decoder.max_length_output):
+    for _t in range(decoder.max_length_output):
         # Call decoder
         predictions, dec_state, _ = decoder(dec_input, dec_state, enc_out)
 
