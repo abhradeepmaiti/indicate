@@ -96,7 +96,7 @@ class TestLLMModuleImport(unittest.TestCase):
         # Clear all API keys to simulate no-key environment
         api_keys = [
             "OPENAI_API_KEY",
-            "ANTHROPIC_API_KEY", 
+            "ANTHROPIC_API_KEY",
             "GOOGLE_API_KEY",
             "GEMINI_API_KEY",
             "COHERE_API_KEY",
@@ -108,22 +108,21 @@ class TestLLMModuleImport(unittest.TestCase):
             if key in os.environ:
                 original_values[key] = os.environ[key]
                 del os.environ[key]
-        
+
         try:
             # These imports should work without API keys
-            from indicate.llm_indic import IndicLLMTransliterator
             from indicate.indic_utils import detect_language_from_script
-            from indicate.cli import cli
-            
+            from indicate.llm_indic import IndicLLMTransliterator
+
             # Basic functionality that doesn't require API calls should work
             detected = detect_language_from_script("नमस्ते")
             self.assertEqual(detected, "hindi")
-            
+
             # LLM class initialization should fail gracefully with clear error
             with self.assertRaises(ValueError) as context:
                 IndicLLMTransliterator("hindi", "english")
             self.assertIn("No LLM provider detected", str(context.exception))
-            
+
         finally:
             # Restore original environment
             for key, value in original_values.items():

@@ -90,6 +90,7 @@ exclude = [
     ".eggs",
     "notebooks",
     "data",
+    "examples",
 ]
 
 [tool.ruff.lint]
