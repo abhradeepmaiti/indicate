@@ -16,3 +16,4 @@ past/
 *.egg-info*
 coverage.xml
 /test_install_tf220
+/test_tf219

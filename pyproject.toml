@@ -27,7 +27,7 @@ dependencies = [
     "click>=8.0.0",
     "tqdm>=4.60.0",
     "func-timeout>=4.3.0",
-    "tensorflow>=2.16.0,<2.21.0",  # Supports TensorFlow 2.20.0 with ml_dtypes 0.5.4 for JAX compatibility
+    "tensorflow>=2.19.0,<2.21.0",  # Minimum 2.19.0 for ml_dtypes>=0.5.0 JAX compatibility
     "litellm>=1.0.0",  # For LLM-based transliteration
 ]
 
