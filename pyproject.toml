@@ -27,7 +27,7 @@ dependencies = [
     "click>=8.0.0",
     "tqdm>=4.60.0",
     "func-timeout>=4.3.0",
-    "tensorflow>=2.16.0,<2.18.0",  # Pin to version with Python 3.12 support
+    "tensorflow>=2.16.0,<2.21.0",  # Supports TensorFlow 2.20.0 with ml_dtypes 0.5.4 for JAX compatibility
     "litellm>=1.0.0",  # For LLM-based transliteration
 ]
 
