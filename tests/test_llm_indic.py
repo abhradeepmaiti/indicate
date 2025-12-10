@@ -88,6 +88,48 @@ class TestIndicUtils(unittest.TestCase):
         self.assertEqual(segments[0], ("नमस्ते भाई", "devanagari"))
 
 
+class TestLLMModuleImport(unittest.TestCase):
+    """Test LLM module import and basic functionality without API keys."""
+
+    def test_llm_module_import(self):
+        """Test that LLM modules can be imported without API keys."""
+        # Clear all API keys to simulate no-key environment
+        api_keys = [
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY", 
+            "GOOGLE_API_KEY",
+            "GEMINI_API_KEY",
+            "COHERE_API_KEY",
+            "INDICATE_LLM_PROVIDER",
+            "INDICATE_LLM_MODEL"
+        ]
+        original_values = {}
+        for key in api_keys:
+            if key in os.environ:
+                original_values[key] = os.environ[key]
+                del os.environ[key]
+        
+        try:
+            # These imports should work without API keys
+            from indicate.llm_indic import IndicLLMTransliterator
+            from indicate.indic_utils import detect_language_from_script
+            from indicate.cli import cli
+            
+            # Basic functionality that doesn't require API calls should work
+            detected = detect_language_from_script("नमस्ते")
+            self.assertEqual(detected, "hindi")
+            
+            # LLM class initialization should fail gracefully with clear error
+            with self.assertRaises(ValueError) as context:
+                IndicLLMTransliterator("hindi", "english")
+            self.assertIn("No LLM provider detected", str(context.exception))
+            
+        finally:
+            # Restore original environment
+            for key, value in original_values.items():
+                os.environ[key] = value
+
+
 class TestIndicLLMTransliterator(unittest.TestCase):
     """Test IndicLLMTransliterator class."""
 
