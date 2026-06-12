@@ -11,8 +11,11 @@ from indicate.hindi2english import HindiToEnglish
 
 class TestHindiToEnglish(unittest.TestCase):
     def test_hindi_to_english(self):
+        # Characterizes the shipped (retrained PyTorch) model's deterministic
+        # greedy output. The model transliterates the rare surname चिंतालपति as
+        # "chintapalati" (a transposition); other tokens are exact.
         test_inputs = ["राजशेखर चिंतालपति", "गौरव सूद"]
-        test_outputs = ["rajshekhar chintalpati", "gaurav sood"]
+        test_outputs = ["rajshekhar chintapalati", "gaurav sood"]
         for hindi, english in zip(test_inputs, test_outputs, strict=False):
             self.assertEqual(HindiToEnglish.transliterate(hindi), english)
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Indicate is a Python package for transliterating Hindi text to English using a TensorFlow-based encoder-decoder model with attention mechanism. The project uses a custom trained neural network model with pre-trained weights for transliteration.
+Indicate is a Python package for transliterating Indic text to English using PyTorch-based encoder-decoder models with attention. It ships local models for **Hindi** (Devanagari) and **Punjabi** (Gurmukhi), plus an LLM backend for other languages. The local models are custom-trained neural networks with pre-trained weights.
 
 ## Development Commands
 
@@ -43,16 +43,23 @@ make clean        # Clean build artifacts
 
 ### Core Components
 
-1. **HindiToEnglish** (`indicate/hindi2english.py:17`) - Main transliteration class with lazy-loaded TensorFlow model
-2. **Encoder** (`indicate/encoder.py:3`) - LSTM-based encoder for processing Hindi input
-3. **Decoder** (`indicate/decoder.py:7`) - LSTM-based decoder with attention mechanism for generating English output
-4. **Utils** (`indicate/utils.py`) - Translation utilities and tokenization helpers
+1. **Seq2SeqTransliterator** (`indicate/transliterator.py`) - Base lazy-loaded singleton holding the load + greedy `transliterate()` logic, parameterized by class attrs (vocab/weights paths, max lengths)
+2. **HindiToEnglish** (`indicate/hindi2english.py`) / **PunjabiToEnglish** (`indicate/punjabi2english.py`) - Thin subclasses pointing at each language's tokenizers + safetensors
+3. **Encoder** (`indicate/encoder.py`) - `nn.Module` LSTM encoder
+4. **Decoder** (`indicate/decoder.py`) - `nn.Module` LSTM decoder with Luong (dot-product) attention
+5. **Utils** (`indicate/utils.py`) - Tokenizer loading (`load_tokenizer`) and greedy decoding (`translate`)
 
 ### Model Architecture
 - Encoder-decoder with Luong attention mechanism
 - Embedding dimension: 256, LSTM units: 1024
-- Pre-trained weights stored in `data/model/hindi_to_english/saved_weights/`
-- Tokenizers for Hindi and English stored as JSON files
+- Per-language safetensors weights + tokenizer JSONs under
+  `indicate/data/{hindi,punjabi}_to_english/`
+
+### Training
+- PyTorch training/extraction/eval scripts live in `training/` (see `training/README.md`)
+- Hindi corpus `data/hindi.csv` and Punjabi corpus `data/punjabi.csv` are committed
+  (Punjabi is extracted from the uncommitted parquet via `training/extract_punjabi.py`)
+- The Dakshina test sets for the accuracy benchmark must be downloaded separately
 
 ### Data Pipeline
 - Training data from ESPN Cricinfo, election affidavits, Google Dakshina dataset, and IIT Bombay corpus
@@ -60,14 +67,15 @@ make clean        # Clean build artifacts
 - 10-second timeout per translation to prevent infinite loops
 
 ### Key Entry Points
-- Modern CLI: `indicate` command with Click-based interface (defined in pyproject.toml)
+- Modern CLI: `indicate` command (Click group) with `hindi2english` / `punjabi2english` subcommands
 - Legacy CLI: `hindi2english` command for backward compatibility
-- API: `indicate.transliterate.hindi2english(text)` function
-- Main module: `indicate/__init__.py` exposes the transliteration function
+- API: `indicate.hindi2english(text)` and `indicate.punjabi2english(text)` functions
+- Main module: `indicate/__init__.py` exposes both transliteration functions
 
 ## Dependencies
-- Python 3.11+ (modern Python with enhanced type hints)
+- Python 3.13+ (modern Python with enhanced type hints)
 - Click 8.0+ (modern CLI framework)
-- TensorFlow 2.16.0-2.18.0 (core ML framework with Python 3.12 support)
+- PyTorch 2.6+ (core ML framework)
+- safetensors 0.4+ (model weight serialization)
 - func-timeout 4.3.0+ (prevents hanging translations)
 - tqdm 4.60.0+ (progress bars)

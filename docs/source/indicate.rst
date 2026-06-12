@@ -28,10 +28,26 @@ indicate.encoder module
    :undoc-members:
    :show-inheritance:
 
+indicate.transliterator module
+------------------------------
+
+.. automodule:: indicate.transliterator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 indicate.hindi2english module
 -----------------------------
 
 .. automodule:: indicate.hindi2english
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+indicate.punjabi2english module
+-------------------------------
+
+.. automodule:: indicate.punjabi2english
    :members:
    :undoc-members:
    :show-inheritance:

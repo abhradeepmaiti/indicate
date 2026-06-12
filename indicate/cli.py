@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import sys
 import time
+from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from .file_utils import (
 from .hindi2english import HindiToEnglish
 from .indic_utils import detect_language_from_script
 from .llm_indic import IndicLLMTransliterator
+from .punjabi2english import PunjabiToEnglish
 
 
 def _get_version() -> str:
@@ -93,6 +95,66 @@ def hindi2english(
         # Batch processing
         indicate hindi2english --input large_file.txt --batch --quiet
     """
+    _run_transliterate(
+        HindiToEnglish.transliterate, text, input_file, output_file, batch, quiet
+    )
+
+
+@cli.command()
+@click.argument("text", required=False)
+@click.option(
+    "--input",
+    "-i",
+    "input_file",
+    type=click.File("r", encoding="utf-8"),
+    help="Read Punjabi (Gurmukhi) text from file instead of argument",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_file",
+    type=click.File("w", encoding="utf-8"),
+    help="Write transliterated text to file instead of stdout",
+)
+@click.option(
+    "--batch/--no-batch",
+    default=False,
+    help="Process input line by line (useful for large files)",
+)
+@click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
+def punjabi2english(
+    text: str | None,
+    input_file: click.File | None,
+    output_file: click.File | None,
+    batch: bool,
+    quiet: bool,
+) -> None:
+    """Transliterate Punjabi (Gurmukhi) text to English.
+
+    TEXT: Punjabi text to transliterate. If not provided, will read from --input or stdin.
+
+    Examples:
+
+        # Transliterate text directly
+        indicate punjabi2english "ਰਵਿ ਸ਼ਰਮਾ"
+
+        # From file
+        indicate punjabi2english --input punjabi.txt --output english.txt
+    """
+    _run_transliterate(
+        PunjabiToEnglish.transliterate, text, input_file, output_file, batch, quiet
+    )
+
+
+def _run_transliterate(
+    transliterator: Callable[[str], str],
+    text: str | None,
+    input_file: click.File | None,
+    output_file: click.File | None,
+    batch: bool,
+    quiet: bool,
+) -> None:
+    """Shared body for the per-language transliteration commands."""
     try:
         # Determine input source
         if text:
@@ -100,7 +162,7 @@ def hindi2english(
         elif input_file:
             if batch:
                 # Process line by line for large files
-                _process_batch(input_file, output_file, quiet)
+                _process_batch(input_file, output_file, quiet, transliterator)
                 return
             else:
                 input_text = input_file.read().strip()
@@ -122,7 +184,7 @@ def hindi2english(
         if not quiet:
             click.echo("Transliterating...", err=True)
 
-        result = HindiToEnglish.transliterate(input_text)
+        result = transliterator(input_text)
 
         # Output result
         if output_file:
@@ -144,6 +206,7 @@ def _process_batch(
     input_file: click.File,
     output_file: click.File | None,
     quiet: bool,
+    transliterator: Callable[[str], str],
 ) -> None:
     """Process input file line by line."""
     lines = input_file.readlines()
@@ -157,7 +220,7 @@ def _process_batch(
     for line in lines:
         line = line.strip()
         if line:
-            result = HindiToEnglish.transliterate(line)
+            result = transliterator(line)
             results.append(result)
         else:
             results.append("")

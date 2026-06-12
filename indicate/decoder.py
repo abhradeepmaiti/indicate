@@ -1,85 +1,50 @@
 from __future__ import annotations
 
-import tensorflow as tf
-
-from .logging import get_logger
-
-logger = get_logger()
+import torch
+from torch import nn
+from torch.nn import functional as F
 
 
-class Decoder(tf.keras.Model):
-    def __init__(
-        self,
-        vocab_size: int,
-        embedding_dim: int,
-        dec_units: int,
-        batch_sz: int,
-        max_length_input: int,
-        max_length_output: int,
-        attention_type: str = "luong",
-    ) -> None:
+class Decoder(nn.Module):
+    """LSTM decoder with Luong (dot-product) attention.
+
+    Mirrors the original Keras model: the attention query is a linear
+    projection of the target embedding (not the recurrent state), attention is
+    unscaled dot-product over the encoder outputs (Keras ``Attention`` with
+    ``use_scale=False``), and the attention context is concatenated with the
+    embedding before the LSTM.
+
+    ``forward`` works for both the full target sequence (training, teacher
+    forcing) and a single step (autoregressive inference) by carrying ``state``
+    across calls.
+    """
+
+    def __init__(self, vocab_size: int, embedding_dim: int, dec_units: int) -> None:
         super().__init__()
-        self.batch_sz = batch_sz
-        self.dec_units = dec_units
-        self.attention_type = attention_type
-        self.max_length_input = max_length_input
-        self.max_length_output = max_length_output
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.query_layer = nn.Linear(embedding_dim, dec_units)
+        self.lstm = nn.LSTM(dec_units + embedding_dim, dec_units, batch_first=True)
+        self.fc = nn.Linear(dec_units, vocab_size)
 
-        # Embedding Layer
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-
-        # Final Dense layer on which softmax will be applied
-        self.fc = tf.keras.layers.Dense(vocab_size)
-
-        # Define the fundamental cell for decoder recurrent structure
-        self.decoder_rnn_cell = tf.keras.layers.LSTMCell(self.dec_units)
-        self.decoder_rnn = tf.keras.layers.RNN(
-            self.decoder_rnn_cell, return_sequences=True, return_state=True
-        )
-
-        # Create attention mechanism
-        # For Luong attention: project the query to match the encoder output's dimension (dec_units)
-        if self.attention_type == "luong":
-            self.query_layer = tf.keras.layers.Dense(dec_units)
-
-        self.attention_mechanism = self.build_attention_mechanism(None)
-
-    def build_attention_mechanism(
-        self, memory: tf.Tensor | None
-    ) -> tf.keras.layers.Layer:
-        if self.attention_type == "bahdanau":
-            return tf.keras.layers.AdditiveAttention()
-        else:
-            return tf.keras.layers.Attention()
-
-    def call(
+    def forward(
         self,
-        inputs: tf.Tensor,
-        initial_state: list[tf.Tensor],
-        encoder_outputs: tf.Tensor,
-    ) -> tuple[tf.Tensor, tuple[tf.Tensor, tf.Tensor], tf.Tensor]:
-        # Get the embeddings of the inputs
-        x = self.embedding(inputs)
+        inputs: torch.Tensor,
+        encoder_outputs: torch.Tensor,
+        state: tuple[torch.Tensor, torch.Tensor] | None = None,
+        src_mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+        x = self.embedding(inputs)  # [B, T, E]
+        query = self.query_layer(x)  # [B, T, U]
 
-        if self.attention_type == "luong":
-            query = self.query_layer(x)
-        else:
-            query = x
+        # Unscaled dot-product (Luong) attention over the encoder outputs.
+        scores = torch.bmm(query, encoder_outputs.transpose(1, 2))  # [B, T, S]
+        if src_mask is not None:
+            # Mask padded encoder positions (src_mask: True = real token).
+            scores = scores.masked_fill(~src_mask.unsqueeze(1), float("-inf"))
+        weights = F.softmax(scores, dim=-1)
+        context = torch.bmm(weights, encoder_outputs)  # [B, T, U]
 
-        # Feature dimensions to the attention layer
-        attention_output, attention_weights = self.attention_mechanism(
-            [query, encoder_outputs], return_attention_scores=True
-        )
-        # Concatenate the attention output with the LSTM Cell output
-        lstm_input = tf.concat([attention_output, x], axis=-1)
-        # Process through the LSTM cell
-        outputs, state_h, state_c = self.decoder_rnn(lstm_input, initial_state)
-        # Pass through the final dense layer
-        outputs = self.fc(outputs)
-        return outputs, (state_h, state_c), attention_weights
-
-    def build_initial_state(
-        self, batch_sz: int, encoder_state: list[tf.Tensor]
-    ) -> list[tf.Tensor]:
-        hidden_state, cell_state = encoder_state
-        return [hidden_state, cell_state]
+        lstm_in = torch.cat([context, x], dim=-1)  # [B, T, U + E]
+        outputs, new_state = self.lstm(lstm_in, state)
+        logits = self.fc(outputs)  # [B, T, V]
+        return logits, new_state

@@ -15,19 +15,20 @@ license = { text = "MIT" }
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
 ]
 keywords = ["transliterate", "indic", "hindi", "english"]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.13"
 dependencies = [
     "click>=8.0.0",
     "tqdm>=4.60.0",
     "func-timeout>=4.3.0",
-    "tensorflow>=2.19.0,<2.21.0",  # Minimum 2.19.0 for ml_dtypes>=0.5.0 JAX compatibility
+    "numpy>=1.26",
+    "torch>=2.6.0",
+    "safetensors>=0.4.0",
     "litellm>=1.0.0",  # For LLM-based transliteration
 ]
 
@@ -54,6 +55,11 @@ test = [
     "pytest-cov>=4.0",
     "pytest-xdist>=3.0",
 ]
+train = [
+    "pandas>=2.0",
+    "pyarrow>=15",
+    "matplotlib>=3.7",
+]
 
 [project.urls]
 Homepage = "https://github.com/in-rolls/indicate"
@@ -79,7 +85,7 @@ source-exclude = [
 # Ruff configuration
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
 exclude = [
     ".git",
     "__pycache__",
@@ -120,7 +126,7 @@ known-first-party = ["indicate"]
 # Black configuration
 [tool.black]
 line-length = 88
-target-version = ["py311", "py312"]
+target-version = ["py313"]
 
 # isort configuration
 [tool.isort]
@@ -144,14 +150,9 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
-filterwarnings = [
-    "ignore:.*PyType_Spec with a metaclass.*:DeprecationWarning",
-    "ignore:.*deprecated and will no longer be allowed in Python 3.14.*:DeprecationWarning",
-]
-
 # mypy configuration
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 check_untyped_defs = true
@@ -165,7 +166,7 @@ module = "tests.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "tensorflow.*"
+module = ["torch.*", "safetensors.*", "func_timeout.*"]
 ignore_missing_imports = true
 
 # Coverage configuration

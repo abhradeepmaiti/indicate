@@ -8,9 +8,11 @@ from __future__ import annotations
 
 from .cli import main
 from .hindi2english import HindiToEnglish
+from .punjabi2english import PunjabiToEnglish
 
-# Keep the function available for API usage
+# Keep the functions available for API usage
 hindi2english = HindiToEnglish.transliterate
+punjabi2english = PunjabiToEnglish.transliterate
 
 # Export the main function for entry point
-__all__ = ["hindi2english", "main"]
+__all__ = ["hindi2english", "punjabi2english", "main"]
