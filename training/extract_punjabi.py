@@ -11,8 +11,8 @@ For every row/field we extract the Gurmukhi runs from the source and the Latin
 runs from the target; when their counts match we zip them into word pairs. Rows
 that don't align (e.g. pre-existing Latin inflating the target) are skipped.
 
-Output: ``data/punjabi.csv`` (columns ``punjabi,english``), deduped to unique
-pairs and committed as the Punjabi analogue of ``data/hindi.csv``.
+Output: ``data/punjabi.csv.gz`` (columns ``punjabi,english``), deduped to unique
+pairs and committed as the Punjabi analogue of ``data/hindi.csv.gz``.
 
 Example:
     python training/extract_punjabi.py
@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -31,7 +32,7 @@ from tqdm import tqdm
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PARQUET = REPO_ROOT / "data" / "punjab_transliteration_subset.parquet"
-DEFAULT_OUT = REPO_ROOT / "data" / "punjabi.csv"
+DEFAULT_OUT = REPO_ROOT / "data" / "punjabi.csv.gz"
 
 GURMUKHI_RUN = re.compile(r"[਀-੿]+")
 LATIN_RUN = re.compile(r"[A-Za-z]+")
@@ -108,7 +109,8 @@ def main() -> None:
     pairs.sort()
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with open(args.out, "w", encoding="utf-8", newline="") as f:
+    opener = gzip.open if str(args.out).endswith(".gz") else open
+    with opener(args.out, "wt", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["punjabi", "english"])
         writer.writerows(pairs)

@@ -45,7 +45,7 @@ DATA_DIR = REPO_ROOT / "indicate" / "data"
 MODELS = {
     "hindi": {
         "cls": HindiToEnglish,
-        "data": REPO_ROOT / "data" / "hindi.csv",
+        "data": REPO_ROOT / "data" / "hindi.csv.gz",
         "input_vocab": DATA_DIR / "hindi_to_english" / "hindi_tokens.json",
         "target_vocab": DATA_DIR / "hindi_to_english" / "english_tokens.json",
         "max_input": 47,
@@ -53,7 +53,7 @@ MODELS = {
     },
     "punjabi": {
         "cls": PunjabiToEnglish,
-        "data": REPO_ROOT / "data" / "punjabi.csv",
+        "data": REPO_ROOT / "data" / "punjabi.csv.gz",
         "input_vocab": DATA_DIR / "punjabi_to_english" / "punjabi_tokens.json",
         "target_vocab": DATA_DIR / "punjabi_to_english" / "english_tokens.json",
         "max_input": 32,

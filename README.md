@@ -1,4 +1,4 @@
-# Indicate: Transliterate Indic Languages with TensorFlow and LLMs
+# Indicate: Transliterate Indic Languages with PyTorch and LLMs
 
 [![Notary Badge](https://notarypy.soodoku.workers.dev/badge/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl)](https://pypi.org/integrity/indicate/0.2.1/indicate-0.2.1-py3-none-any.whl/provenance)
 [![PyPI Version](https://img.shields.io/pypi/v/indicate.svg)](https://pypi.python.org/pypi/indicate)
@@ -6,11 +6,11 @@
 [![Tests](https://github.com/in-rolls/indicate/workflows/test/badge.svg)](https://github.com/in-rolls/indicate/actions?query=workflow%3Atest)
 [![Documentation](https://img.shields.io/badge/docs-github.io-blue)](https://in-rolls.github.io/indicate/)
 
-**Indicate** provides high-quality transliteration between Indic languages and English using both traditional TensorFlow models and state-of-the-art LLMs (Large Language Models).
+**Indicate** provides high-quality transliteration between Indic languages and English using both a traditional PyTorch model and state-of-the-art LLMs (Large Language Models).
 
 ## 🚀 Features
 
-- **🧠 Dual Backend Support**: Choose between TensorFlow models or LLM-based transliteration
+- **🧠 Dual Backend Support**: Choose between the PyTorch model or LLM-based transliteration
 - **🌍 Multi-Language**: 12+ Indic languages (Hindi, Tamil, Telugu, Bengali, etc.)
 - **🔄 Bidirectional**: Supports both Indic→English and English→Indic transliteration
 - **🛡️ Production Ready**: Safe file handling, atomic writes, backup support
@@ -25,7 +25,7 @@ Hindi • Tamil • Telugu • Bengali • Gujarati • Kannada • Malayalam �
 
 We strongly recommend installing `indicate` inside a Python virtual environment (see [venv documentation](https://docs.python.org/3/library/venv.html#creating-virtual-environments))
 
-**Requirements:** Python 3.11 or 3.12 (TensorFlow does not yet support Python 3.13)
+**Requirements:** Python 3.13+
 
 ```bash
 pip install indicate
@@ -43,10 +43,10 @@ export ANTHROPIC_API_KEY=your-key
 export GOOGLE_API_KEY=your-key
 ```
 
-### For TensorFlow-only usage:
+### For the local model (no API key):
 ```bash
 pip install indicate
-# No API key needed - uses pre-trained models
+# No API key needed - uses the bundled pre-trained PyTorch model
 ```
 
 ## 🎯 Usage
@@ -90,12 +90,19 @@ results = transliterator.transliterate_batch(texts)
 print(results)  # ['Rajesh', 'Gaurav', 'Priya']
 ```
 
-### 🤖 TensorFlow Backend (Traditional)
+### 🤖 PyTorch Backend (Traditional)
+
+Local offline models are available for **Hindi** (Devanagari) and **Punjabi**
+(Gurmukhi):
 
 ```bash
-# Hindi to English using TensorFlow model
+# Hindi to English using the local PyTorch model
 indicate hindi2english "राजशेखर चिंतालपति"
-# Output: rajashekar chintalapati
+# Output: rajshekhar chintapalati
+
+# Punjabi (Gurmukhi) to English
+indicate punjabi2english "ਰਵਿ ਸ਼ਰਮਾ"
+# Output: ravi sharma
 
 # From file
 indicate hindi2english --input hindi.txt --output english.txt
@@ -106,9 +113,9 @@ indicate hindi2english --input large_file.txt --batch
 
 **Python API:**
 ```python
-from indicate import hindi2english
-result = hindi2english("हिंदी")
-print(result)  # Output: hindi
+from indicate import hindi2english, punjabi2english
+print(hindi2english("हिंदी"))      # hindi
+print(punjabi2english("ਰਵਿ"))      # ravi
 ```
 
 ## 📊 JSON Output Format
@@ -167,7 +174,7 @@ indicate llm --input results.json --source english --target hindi
 
 ## 🔄 Backend Comparison
 
-| Feature | TensorFlow Backend | LLM Backend |
+| Feature | PyTorch Backend | LLM Backend |
 |---------|------------------|-------------|
 | **Languages** | Hindi ↔ English only | 12+ Indic languages ↔ English + Inter-Indic |
 | **Setup** | No API key needed | Requires LLM API key |
@@ -198,7 +205,7 @@ indicate llm --input results.json --source english --target hindi
 
 3. **Test both backends**:
    ```bash
-   # TensorFlow backend
+   # PyTorch backend
    indicate hindi2english "हिंदी"
    
    # LLM backend (set API key first)
@@ -217,10 +224,21 @@ The datasets used to train the model:
 
 ## Evaluation
 
-Model was evaluated on test dataset of Google Dakshina dataset, Model predicted 73.64% exact matches.
-[Indic-trans](https://github.com/libindic/indic-trans) predicted 63.12% exact matches on Google Dakshina dataset.
+Both PyTorch models were evaluated on the Google Dakshina test sets (2,500 unique
+words each; a word counts as correct if the prediction matches any reference
+romanization). Beam search (the shipped default) is reported alongside greedy:
 
-Below is the edit distance metrics on test dataset (0.0 mean exact match, the farther away from 0.0, the difference is more between predicted text and actual text):
+| Model | Exact-match (greedy → beam) | Acc@≤1 | CER |
+|-------|-----------------------------|--------|-----|
+| Hindi → English | 75.80% → **77.32%** | 91.16% | 5.65% |
+| Punjabi → English | 70.96% → **71.24%** | 91.56% | 6.42% |
+
+The earlier TensorFlow Hindi model scored 73.64%;
+[Indic-trans](https://github.com/libindic/indic-trans) scored 63.12% on the same
+Hindi set. Primary metric is Top-1 exact-match accuracy; CER (character error
+rate) is the soft companion that credits near-misses.
+
+Below is the edit-distance distribution on the test set (0 = exact match):
 
 ![Edit distance metrics of model on Google Dakshina test dataset](https://github.com/in-rolls/indicate/raw/master/images/h2e_ed.png)
 

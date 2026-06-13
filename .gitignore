@@ -23,3 +23,4 @@ dakshina_dataset_v1.0/
 data/dakshina/
 # Large/raw Punjabi source data (silver, electoral-roll PII); committed data is data/punjabi.csv
 data/punjab_transliteration_subset.parquet
+training/IMPROVEMENTS.md

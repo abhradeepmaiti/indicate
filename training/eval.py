@@ -43,12 +43,12 @@ MODELS = {
     "hindi": (
         HindiToEnglish,
         DAKSHINA_DIR / "hi.translit.sampled.test.tsv",
-        DATA_DIR / "hindi.csv",
+        DATA_DIR / "hindi.csv.gz",
     ),
     "punjabi": (
         PunjabiToEnglish,
         DAKSHINA_DIR / "pa.translit.sampled.test.tsv",
-        DATA_DIR / "punjabi.csv",
+        DATA_DIR / "punjabi.csv.gz",
     ),
 }
 

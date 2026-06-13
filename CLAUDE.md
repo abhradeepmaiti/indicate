@@ -57,9 +57,9 @@ make clean        # Clean build artifacts
 
 ### Training
 - PyTorch training/extraction/eval scripts live in `training/` (see `training/README.md`)
-- Hindi corpus `data/hindi.csv` and Punjabi corpus `data/punjabi.csv` are committed
-  (Punjabi is extracted from the uncommitted parquet via `training/extract_punjabi.py`)
-- The Dakshina test sets for the accuracy benchmark must be downloaded separately
+- Hindi corpus `data/hindi.csv.gz` and Punjabi corpus `data/punjabi.csv.gz` are committed
+  (Punjabi is extracted from the Dataverse-hosted parquet via `training/extract_punjabi.py`)
+- Raw/large source data and the Dakshina benchmark live on Dataverse (see `data/README.md`)
 
 ### Data Pipeline
 - Training data from ESPN Cricinfo, election affidavits, Google Dakshina dataset, and IIT Bombay corpus

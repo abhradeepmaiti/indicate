@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Train the Hindi -> English transliteration model (PyTorch).
 
-Reads the committed parallel corpus ``data/hindi.csv`` (columns ``hindi`` and
+Reads the committed parallel corpus ``data/hindi.csv.gz`` (columns ``hindi`` and
 ``english``), trains the encoder-decoder with Luong attention using teacher
 forcing, and saves the best weights as safetensors plus the character
 tokenizers used.
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import json
 import random
 import sys
@@ -41,7 +42,7 @@ from indicate.utils import (  # noqa: E402
     load_tokenizer,
 )
 
-DEFAULT_DATA = REPO_ROOT / "data" / "hindi.csv"
+DEFAULT_DATA = REPO_ROOT / "data" / "hindi.csv.gz"
 WEIGHTS_DIR = REPO_ROOT / "indicate" / "data" / "hindi_to_english" / "saved_weights"
 INPUT_VOCAB = REPO_ROOT / "indicate" / "data" / "hindi_to_english" / "hindi_tokens.json"
 TARGET_VOCAB = (
@@ -83,10 +84,12 @@ def load_pairs(path: Path) -> list[tuple[str, str]]:
     """Read (source, english) pairs from the first two CSV columns.
 
     Column-name agnostic so the same loader handles ``hindi.csv`` (hindi,english)
-    and ``punjabi.csv`` (punjabi,english).
+    and ``punjabi.csv`` (punjabi,english). Transparently reads gzip (``.csv.gz``)
+    or plain ``.csv``.
     """
+    opener = gzip.open if str(path).endswith(".gz") else open
     pairs: list[tuple[str, str]] = []
-    with open(path, encoding="utf-8") as f:
+    with opener(path, "rt", encoding="utf-8") as f:
         reader = csv.reader(f)
         next(reader, None)  # skip header row
         for row in reader:

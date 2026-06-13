@@ -10,7 +10,7 @@ tokenizers and `saved_weights/` live.
 
 ## Hindi
 
-Training uses the committed parallel corpus `data/hindi.csv` (371k Hindi/English
+Training uses the committed parallel corpus `data/hindi.csv.gz` (371k Hindi/English
 character pairs from Indian election affidavits, ESPN Cricinfo, the Google
 Dakshina dataset, and the IIT Bombay corpus). **No download is required** — the
 merged corpus is already in the repo. By default the existing tokenizer JSONs are
@@ -32,12 +32,12 @@ The Punjabi pairs are distilled from GPT-4o. The raw source
 pairs can be recovered:
 
 ```bash
-# 1. Extract unique (gurmukhi -> english) word pairs -> data/punjabi.csv (committed)
+# 1. Extract unique (gurmukhi -> english) word pairs -> data/punjabi.csv.gz (committed)
 python training/extract_punjabi.py
 
 # 2. Train (own Gurmukhi + English vocabularies)
 python training/train.py \
-    --data data/punjabi.csv \
+    --data data/punjabi.csv.gz \
     --model-dir indicate/data/punjabi_to_english \
     --input-vocab-name punjabi_tokens.json --target-vocab-name english_tokens.json \
     --max-input 32 --max-output 32 --rebuild-vocab \
