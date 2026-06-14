@@ -3,6 +3,7 @@
 !.gitignore
 !.gitattributes
 !.travis.yml
+!.pre-commit-config.yaml
 *.pyc
 *.log
 ./data
