@@ -26,6 +26,16 @@ safetensors) live under `indicate/data/` instead.
 
 **Download from origin** (third-party, not redistributed):
 - Google Dakshina benchmark → `data/dakshina/` (see `training/README.md`).
+- **Aksharantar** (AI4Bharat, CC-BY/CC0) → fetched by `training/fetch_aksharantar.py`
+  into `data/aksharantar/` (gitignored). The v2 data-scale source (Hindi 1.3M,
+  Punjabi 515k pairs). https://huggingface.co/datasets/ai4bharat/Aksharantar
+
+**Built locally, gitignored** (v2 — see `training/build_v2.py`):
+- `data/<lang>_train_v2.csv.gz` — merged training corpus (ours + Aksharantar
+  train/val), deduped, **leakage-filtered** so no training source appears in the eval.
+- `data/eval/<lang>_blended.tsv` — blended multi-reference eval: Dakshina test +
+  Aksharantar test + a held-out slice of our own corpus (union by source word).
+  *Leakage filter is mandatory because Aksharantar contains Dakshina-sourced rows.*
 
 ## Pipelines (source → repo → model)
 
@@ -48,15 +58,27 @@ Parsed Indian Electoral Rolls (10.7910/DVN/MUEGDT, restricted)   [super-upstream
   → training/train.py                          → indicate/data/punjabi_to_english/
 ```
 
+**v2 (Aksharantar-scaled)** — both languages
+```
+data/<lang>.csv.gz (ours) + Aksharantar train/val (download)
+  → training/build_v2.py   (merge, dedupe, leakage-filter; build blended eval)
+  → data/<lang>_train_v2.csv.gz + data/eval/<lang>_blended.tsv
+  → training/train.py --rebuild-vocab → indicate/data/<lang>_to_english/
+```
+
 ## Reproduce / download
 
 ```bash
-# Train directly from the committed corpora (no download needed):
+# v1: train from the committed corpora (no download needed)
 python training/train.py                                   # Hindi
 python training/train.py --data data/punjabi.csv.gz \
     --model-dir indicate/data/punjabi_to_english --rebuild-vocab \
     --input-vocab-name punjabi_tokens.json --max-input 32 --max-output 32
 
-# Re-derive a corpus from source: fetch the Dataverse files above, then run the
-# corresponding notebook / training/extract_punjabi.py.
+# v2: scale with Aksharantar, then retrain + eval on the blended set
+python training/fetch_aksharantar.py
+python training/build_v2.py
+python training/train.py --data data/hi_train_v2.csv.gz \
+    --model-dir indicate/data/hindi_to_english --rebuild-vocab
+python training/eval.py --model hindi --test-file data/eval/hi_blended.tsv
 ```

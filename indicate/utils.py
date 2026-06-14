@@ -130,7 +130,7 @@ def _beam_decode(
     return finished
 
 
-def translate(
+def word_candidates(
     sentence: str,
     input_lang_tokenizer: CharTokenizer,
     target_lang_tokenizer: CharTokenizer,
@@ -139,13 +139,12 @@ def translate(
     max_length_input: int,
     max_length_output: int,
     beam_width: int = 1,
-    reranker: Reranker | None = None,
     mask_padding: bool = False,
-) -> str:
-    """Transliterate a single word to English (greedy, or beam if width > 1).
+) -> list[tuple[str, float]]:
+    """Ranked ``(text, score)`` candidates for one word, best-first.
 
-    With ``reranker`` set and beam search on, the top-k beam hypotheses are
-    re-scored by interpolating the model score with a language-model score.
+    With ``beam_width > 1`` this is the beam's length-normalized hypotheses;
+    with greedy decoding it is a single candidate. Empty input -> ``[]``.
     ``mask_padding`` must match how the weights were trained.
     """
     start_id = target_lang_tokenizer.word_index[START_TOKEN]
@@ -154,7 +153,7 @@ def translate(
     # Character -> index, post-padded/truncated to the fixed input length.
     ids = [input_lang_tokenizer.word_index[ch] for ch in sentence][:max_length_input]
     if not ids:
-        return ""
+        return []
     ids = ids + [0] * (max_length_input - len(ids))
     inputs = torch.tensor([ids], dtype=torch.long)
     src_mask = (inputs != 0) if mask_padding else None
@@ -172,23 +171,46 @@ def translate(
                 beam_width,
                 src_mask,
             )
-            candidates = [
+            return [
                 (sequence_to_chars(target_lang_tokenizer, toks).strip(END_TOKEN), score)
                 for score, toks in hyps
             ]
-            if reranker is not None:
-                best = reranker.best(candidates)
-            else:
-                best = candidates[0][0]
-            return best
         tokens = _greedy_decode(
-            encoder_outputs,
-            state,
-            start_id,
-            end_id,
-            decoder,
-            max_length_output,
-            src_mask,
+            encoder_outputs, state, start_id, end_id, decoder, max_length_output, src_mask
         )
+        return [(sequence_to_chars(target_lang_tokenizer, tokens).strip(END_TOKEN), 0.0)]
 
-    return sequence_to_chars(target_lang_tokenizer, tokens).strip(END_TOKEN)
+
+def translate(
+    sentence: str,
+    input_lang_tokenizer: CharTokenizer,
+    target_lang_tokenizer: CharTokenizer,
+    encoder: Encoder,
+    decoder: Decoder,
+    max_length_input: int,
+    max_length_output: int,
+    beam_width: int = 1,
+    reranker: Reranker | None = None,
+    mask_padding: bool = False,
+) -> str:
+    """Best single-word transliteration (greedy, or beam if width > 1).
+
+    With ``reranker`` set and beam on, the top-k beam hypotheses are re-scored by
+    interpolating the model score with a language-model score.
+    """
+    cands = word_candidates(
+        sentence,
+        input_lang_tokenizer,
+        target_lang_tokenizer,
+        encoder,
+        decoder,
+        max_length_input,
+        max_length_output,
+        beam_width,
+        mask_padding,
+    )
+    if not cands:
+        return ""
+    if reranker is not None and beam_width and beam_width > 1:
+        return reranker.best(cands)
+    return cands[0][0]

@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import random
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import torch
@@ -112,25 +113,32 @@ def main() -> None:
         transliterator.RERANKER = Reranker(targets, alpha=args.alpha)
 
     val_pairs = reproduce_val_pairs(cfg, args.seed, args.val_frac)
-    print(f"[{args.model}] held-out validation pairs: {len(val_pairs)}")
+    # Group to multi-reference: a source counts correct if it matches any reference.
+    refs: dict[str, set[str]] = defaultdict(set)
+    for source, english in val_pairs:
+        refs[source].add(english)
+    sources = sorted(refs)
+    print(
+        f"[{args.model}] held-out: {len(val_pairs)} pairs, {len(sources)} unique sources"
+    )
 
     rng = random.Random(args.seed)
     scored = (
-        val_pairs
-        if not args.sample or args.sample >= len(val_pairs)
-        else rng.sample(val_pairs, args.sample)
+        sources
+        if not args.sample or args.sample >= len(sources)
+        else rng.sample(sources, args.sample)
     )
 
     dists: list[int] = []
     ref_lens: list[int] = []
     misses: list[tuple[str, str, str]] = []
-    for source, english in tqdm(scored, desc="oos-eval"):
+    for source in tqdm(scored, desc="oos-eval"):
         pred = transliterator.transliterate(source)
-        dist, ref_len = score_word(pred, [english])
+        dist, ref_len = score_word(pred, refs[source])
         dists.append(dist)
         ref_lens.append(ref_len)
         if dist != 0 and len(misses) < 25:
-            misses.append((source, english, pred))
+            misses.append((source, sorted(refs[source])[0], pred))
 
     stats = summarize(dists, ref_lens)
     print(f"\n{format_summary(stats, f'{args.model} held-out')}")

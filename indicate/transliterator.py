@@ -10,7 +10,7 @@ from safetensors.torch import load_file
 from .decoder import Decoder
 from .encoder import Encoder
 from .logging import get_logger
-from .utils import CharTokenizer, load_tokenizer, translate
+from .utils import CharTokenizer, load_tokenizer, translate, word_candidates
 
 if TYPE_CHECKING:
     from .rerank import Reranker
@@ -101,14 +101,17 @@ class Seq2SeqTransliterator:
             raise RuntimeError(f"Failed to load model: {e}") from e
 
     @classmethod
-    def transliterate(cls, input: str) -> str:
+    def transliterate(cls, input: str, n: int = 1) -> str | list[str]:
         """
         Transliterate the input text to English, one whitespace word at a time.
 
         Args:
             input (str): source-language text
+            n (int): number of candidates to return. ``n == 1`` (default) returns
+                a single best string; ``n > 1`` returns a list of up to ``n``
+                ranked candidates (requires beam search).
         Returns:
-            output (str): English transliteration
+            str when ``n == 1``; list[str] when ``n > 1``.
         Raises:
             TypeError: If input is None
             ValueError: If input is not a string
@@ -120,7 +123,7 @@ class Seq2SeqTransliterator:
             raise ValueError("Input must be a string")
         if not input.strip():
             # Handle whitespace-only input gracefully
-            return ""
+            return [] if n > 1 else ""
 
         if not cls._weights_loaded:
             cls._load_weights()
@@ -130,13 +133,47 @@ class Seq2SeqTransliterator:
         # the 10-second timeout below.
         words = input.split(" ") if " " in input else [input]
 
-        output = []
+        if n <= 1:
+            output = []
+            for word in words:
+                target = ""
+                try:
+                    target = func_timeout(
+                        10,
+                        translate,
+                        args=(
+                            word,
+                            cls.input_lang_tokenizer,
+                            cls.target_lang_tokenizer,
+                            cls.encoder,
+                            cls.decoder,
+                            cls.max_length_input,
+                            cls.max_length_output,
+                            cls.BEAM_WIDTH,
+                            cls.RERANKER,
+                            cls.MASK_PADDING,
+                        ),
+                    )
+                    logger.debug(f"Model predicted {target}")
+                except FunctionTimedOut as fex:
+                    logger.error(
+                        f"Not able to transliterate {input} within 10 seconds, exiting with {fex}"
+                    )
+                except Exception as exe:
+                    logger.error(f"Not able to transliterate {input} due to {exe}")
+                output.append(target)
+            return " ".join(output)
+
+        # n-best: rank each word's candidates, then beam-combine across words
+        # (keep the top-n partial phrases by summed score at each step).
+        beam = max(cls.BEAM_WIDTH, n)
+        combos: list[tuple[str, float]] = [("", 0.0)]
         for word in words:
-            target = ""
+            cands: list[tuple[str, float]] = [("", 0.0)]
             try:
-                target = func_timeout(
+                got = func_timeout(
                     10,
-                    translate,
+                    word_candidates,
                     args=(
                         word,
                         cls.input_lang_tokenizer,
@@ -145,18 +182,21 @@ class Seq2SeqTransliterator:
                         cls.decoder,
                         cls.max_length_input,
                         cls.max_length_output,
-                        cls.BEAM_WIDTH,
-                        cls.RERANKER,
+                        beam,
                         cls.MASK_PADDING,
                     ),
                 )
-                logger.debug(f"Model predicted {target}")
+                cands = got[:n] or cands
             except FunctionTimedOut as fex:
-                logger.error(
-                    f"Not able to transliterate {input} within 10 seconds, exiting with {fex}"
-                )
+                logger.error(f"Not able to transliterate {input} in time: {fex}")
             except Exception as exe:
                 logger.error(f"Not able to transliterate {input} due to {exe}")
-            output.append(target)
+            combos = [
+                (p + (" " if p else "") + t, s + sc)
+                for p, s in combos
+                for t, sc in cands
+            ]
+            combos.sort(key=lambda x: x[1], reverse=True)
+            combos = combos[:n]
 
-        return " ".join(output)
+        return [phrase for phrase, _ in combos][:n]

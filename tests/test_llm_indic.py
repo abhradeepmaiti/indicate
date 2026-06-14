@@ -328,20 +328,20 @@ target: Bharat
             ]
         }
 
-        with patch("builtins.open", mock_open(read_data=json.dumps(mock_json_data))):
-            with patch("importlib.resources.files") as mock_files:
-                # Mock the path existence
-                mock_path = MagicMock()
-                mock_path.exists.return_value = True
-                mock_files.return_value.__truediv__.return_value = mock_path
+        with patch("importlib.resources.files") as mock_files:
+            # Mock the Traversable returned by files(...) / "llm_examples.json"
+            mock_path = MagicMock()
+            mock_path.is_file.return_value = True
+            mock_path.open = mock_open(read_data=json.dumps(mock_json_data))
+            mock_files.return_value.__truediv__.return_value = mock_path
 
-                os.environ["OPENAI_API_KEY"] = "test-key"
-                trans = IndicLLMTransliterator("hindi", "english")
+            os.environ["OPENAI_API_KEY"] = "test-key"
+            trans = IndicLLMTransliterator("hindi", "english")
 
-                # Check that examples were loaded
-                cache_key = ("hindi", "english")
-                self.assertIn(cache_key, trans._examples_cache)
-                self.assertEqual(len(trans._examples_cache[cache_key]), 2)
+            # Check that examples were loaded
+            cache_key = ("hindi", "english")
+            self.assertIn(cache_key, trans._examples_cache)
+            self.assertEqual(len(trans._examples_cache[cache_key]), 2)
 
     @patch("indicate.llm_indic.completion")
     def test_fallback_examples(self, mock_completion):

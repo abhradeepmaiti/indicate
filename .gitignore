@@ -24,3 +24,7 @@ data/dakshina/
 # Large/raw Punjabi source data (silver, electoral-roll PII); committed data is data/punjabi.csv
 data/punjab_transliteration_subset.parquet
 training/IMPROVEMENTS.md
+# v2 (Aksharantar) — external download, derived training corpora, built eval sets
+data/aksharantar/
+data/eval/
+data/*_train_v2.csv.gz

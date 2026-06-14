@@ -201,8 +201,8 @@ class IndicLLMTransliterator:
 
             examples_path = files("indicate.data") / "llm_examples.json"
 
-            if examples_path.exists():
-                with open(examples_path, encoding="utf-8") as f:
+            if examples_path.is_file():
+                with examples_path.open(encoding="utf-8") as f:
                     examples = json.load(f)
 
                     key = f"{self.source_lang}_{self.target_lang}"
@@ -321,7 +321,7 @@ Focus on accurate phonetic representation."""
         examples = []
         lines = response.strip().split("\n")
 
-        current_example = {}
+        current_example: dict[str, str] = {}
         for line in lines:
             line = line.strip()
             if line.startswith("source:"):
@@ -400,7 +400,7 @@ Focus on accurate phonetic representation."""
                 max_tokens=len(text) * 3,  # Rough estimate for transliteration length
             )
 
-            result = response.choices[0].message.content.strip()
+            result: str = response.choices[0].message.content.strip()
 
             # Clean up the result (remove any explanation if present)
             if "\n" in result:
@@ -436,6 +436,30 @@ Important Rules:
 
         return prompt
 
+    def default_max_tokens_for(self, texts: list[str]) -> int:
+        """Estimate max output tokens for transliterating ``texts`` as a group."""
+        return max(64, sum(len(t) for t in texts) * 3 + 8 * len(texts))
+
+    def build_group_messages(
+        self, texts: list[str], examples: list[dict[str, str]] | None = None
+    ) -> list[dict[str, str]]:
+        """Build chat messages for transliterating a numbered group of texts.
+
+        Shared by the synchronous ``transliterate_batch`` and the async Batch-API
+        path (``indicate.batch``) so both produce identical prompts.
+        """
+        batch_text = "\n".join(f"{j + 1}. {text}" for j, text in enumerate(texts))
+        system_prompt = self._create_system_prompt(examples or [])
+        user_prompt = (
+            "Transliterate each of the following texts "
+            "(output one transliteration per line, numbered):\n"
+            f"{batch_text}"
+        )
+        return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
     def transliterate_batch(
         self,
         texts: list[str],
@@ -463,20 +487,12 @@ Important Rules:
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
 
-            # Create batch prompt
-            batch_text = "\n".join([f"{j + 1}. {text}" for j, text in enumerate(batch)])
-
-            system_prompt = self._create_system_prompt(examples)
-            user_prompt = f"""Transliterate each of the following texts (output one transliteration per line, numbered):
-{batch_text}"""
+            messages = self.build_group_messages(batch, examples)
 
             try:
                 response = completion(
                     model=self.model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
+                    messages=messages,
                     temperature=self.temperature,
                 )
 
