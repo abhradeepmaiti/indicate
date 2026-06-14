@@ -30,7 +30,7 @@ class TestAPI(unittest.TestCase):
         """Test direct class usage."""
         result = HindiToEnglish.transliterate("राजशेखर")
         self.assertIsInstance(result, str)
-        self.assertEqual(result.lower(), "rajshekhar")
+        self.assertEqual(result.lower(), "rajshekar")
 
     def test_hindi2english_singleton(self):
         """Test that HindiToEnglish is a singleton."""
@@ -57,13 +57,12 @@ class TestAPI(unittest.TestCase):
 
     def test_multiple_translations(self):
         """Test multiple translations in sequence."""
-        # Retrained PyTorch model output; चिंतालपति greedily decodes to
-        # "chintapalati" (transposition) — see test_010_hindi_translate.
+        # v2 (Aksharantar-scaled) model outputs.
         test_cases = [
             ("हिंदी", "hindi"),
             ("गौरव", "gaurav"),
-            ("राजशेखर", "rajshekhar"),
-            ("चिंतालपति", "chintapalati"),
+            ("राजशेखर", "rajshekar"),
+            ("चिंतालपति", "chintalpati"),
         ]
 
         for hindi, expected in test_cases:

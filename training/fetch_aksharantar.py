@@ -26,7 +26,7 @@ from huggingface_hub import hf_hub_download
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = REPO_ROOT / "data" / "aksharantar"
-LANGS = {"hindi": "hin", "punjabi": "pan"}
+LANGS = {"hindi": "hin", "punjabi": "pan", "assamese": "asm", "bengali": "ben"}
 SPLITS = {"train": "train", "val": "valid", "test": "test"}
 
 

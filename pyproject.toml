@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "indicate"
-version = "0.6.0"
+version = "0.7.0"
 description = "Transliterations to/from Indian languages"
 readme = "README.md"
 authors = [
@@ -25,11 +25,12 @@ requires-python = ">=3.13"
 dependencies = [
     "click>=8.0.0",
     "tqdm>=4.60.0",
-    "func-timeout>=4.3.0",
     "numpy>=1.26",
     "torch>=2.6.0",
     "safetensors>=0.4.0",
+    "huggingface-hub>=0.23",  # lazy-download model weights at first use
     "litellm>=1.0.0",  # For LLM-based transliteration
+    "google-genai>=1.0",  # native Gemini batch provider (indicate.batch)
 ]
 
 [dependency-groups]
@@ -82,6 +83,9 @@ source-exclude = [
     "/.gitignore",
     "/.pre-commit-config.yaml",
 ]
+# Model weights are hosted on HF and lazy-downloaded; keep them out of the wheel
+# (tiny tokenizer JSONs stay so the package ships its vocab).
+wheel-exclude = ["**/saved_weights/**"]
 
 # Ruff configuration
 [tool.ruff]
@@ -145,8 +149,6 @@ addopts = [
     "--strict-markers",
     "--cov=indicate",
     "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -167,7 +169,7 @@ module = "tests.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["torch.*", "safetensors.*", "func_timeout.*"]
+module = ["torch.*", "safetensors.*", "google.*"]
 ignore_missing_imports = true
 
 # Coverage configuration

@@ -48,7 +48,7 @@ class TestCLI(unittest.TestCase):
         try:
             result = self.runner.invoke(cli, ["hindi2english", "--input", temp_file])
             self.assertEqual(result.exit_code, 0)
-            self.assertIn("rajshekhar", result.output.lower())
+            self.assertIn("rajshekar", result.output.lower())
         finally:
             Path(temp_file).unlink()
 

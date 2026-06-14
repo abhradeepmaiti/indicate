@@ -85,7 +85,7 @@ class TestFileIO(unittest.TestCase):
                 content = f.read()
 
             self.assertIn("gaurav", content.lower())
-            self.assertIn("rajshekhar", content.lower())
+            self.assertIn("rajshekar", content.lower())
         finally:
             Path(temp_input).unlink()
             Path(temp_output).unlink()
@@ -108,7 +108,7 @@ class TestFileIO(unittest.TestCase):
             self.assertEqual(len(lines), 3)
             self.assertIn("hindi", lines[0].lower())
             self.assertIn("gaurav", lines[1].lower())
-            self.assertIn("rajshekhar", lines[2].lower())
+            self.assertIn("rajshekar", lines[2].lower())
         finally:
             Path(temp_file).unlink()
 

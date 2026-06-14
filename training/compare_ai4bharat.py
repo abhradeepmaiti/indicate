@@ -31,8 +31,14 @@ from pathlib import Path
 
 # First-column values that indicate a header row to skip (corpus CSVs).
 _HEADER_FIRST = {
-    "punjabi", "assamese", "hindi", "bengali", "gurmukhi",
-    "telugu", "native", "source",
+    "punjabi",
+    "assamese",
+    "hindi",
+    "bengali",
+    "gurmukhi",
+    "telugu",
+    "native",
+    "source",
 }
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -105,29 +111,64 @@ def cmd_gen_indicxlit(args: argparse.Namespace) -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as handle:
         for i, native in enumerate(natives, 1):
-            pred = _first_pred(engine.translit_word(native, lang_code=args.lang, topk=1))
+            pred = _first_pred(
+                engine.translit_word(native, lang_code=args.lang, topk=1)
+            )
             handle.write(f"{native}\t{pred.lower()}\n")
             if i % 200 == 0:
                 print(f"  {i}/{len(natives)}", file=sys.stderr)
     print(f"Wrote {len(natives)} IndicXlit predictions -> {args.out}")
 
 
+def _load_preds(path: Path | None) -> dict[str, str]:
+    preds: dict[str, str] = {}
+    if path and path.is_file():
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) >= 2:
+                    preds[parts[0]] = parts[1].strip().lower()
+    return preds
+
+
+def cmd_gen_llm(args: argparse.Namespace) -> None:
+    from indicate.llm_indic import IndicLLMTransliterator
+
+    refs = load_refs(args.eval)
+    natives = sorted(refs)
+    if args.sample and args.sample < len(natives):
+        import random
+
+        natives = random.Random(args.seed).sample(natives, args.sample)
+
+    trans = IndicLLMTransliterator(
+        args.lang, "english", provider="openai", model=args.model
+    )
+    preds = trans.transliterate_batch(
+        natives, batch_size=args.batch_size, use_few_shot=True
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as handle:
+        for native, pred in zip(natives, preds, strict=False):
+            handle.write(f"{native}\t{(pred or '').strip().lower()}\n")
+    print(f"Wrote {len(natives)} LLM ({args.model}) predictions -> {args.out}")
+
+
 def cmd_compare(args: argparse.Namespace) -> None:
     from training.metrics import format_summary, score_word, summarize
 
     refs = load_refs(args.eval)
+    indicxlit_preds = _load_preds(args.indicxlit_preds)
+    llm_preds = _load_preds(getattr(args, "llm_preds", None))
 
-    indicxlit_preds: dict[str, str] = {}
-    if args.indicxlit_preds and args.indicxlit_preds.is_file():
-        with open(args.indicxlit_preds, encoding="utf-8") as handle:
-            for line in handle:
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) >= 2:
-                    indicxlit_preds[parts[0]] = parts[1].strip().lower()
-
-    # Score only the natives IndicXlit produced (so both models see the same set),
-    # else fall back to the whole eval set.
-    natives = sorted(indicxlit_preds) if indicxlit_preds else sorted(refs)
+    # Score a common set: prefer the smallest provided contestant (e.g. an LLM run
+    # over a 100-word sample) so every model is judged on identical words.
+    if llm_preds:
+        natives = sorted(llm_preds)
+    elif indicxlit_preds:
+        natives = sorted(indicxlit_preds)
+    else:
+        natives = sorted(refs)
     if args.sample and args.sample < len(natives):
         import random
 
@@ -136,10 +177,16 @@ def cmd_compare(args: argparse.Namespace) -> None:
 
     contestants: dict[str, dict[str, str]] = {}
 
+    if llm_preds:
+        contestants[f"llm:{args.llm_label}"] = {
+            n: llm_preds.get(n, "") for n in natives
+        }
     if indicxlit_preds:
-        contestants["ai4bharat-indicxlit"] = {n: indicxlit_preds.get(n, "") for n in natives}
+        contestants["ai4bharat-indicxlit"] = {
+            n: indicxlit_preds.get(n, "") for n in natives
+        }
 
-    if args.model:
+    if args.model and args.model != "none":
         if args.model == "hindi":
             from indicate.hindi2english import HindiToEnglish as model_cls
         else:
@@ -167,7 +214,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    g = sub.add_parser("gen-indicxlit", help="run IndicXlit -> predictions TSV (py3.10 venv)")
+    g = sub.add_parser(
+        "gen-indicxlit", help="run IndicXlit -> predictions TSV (py3.10 venv)"
+    )
     g.add_argument("--eval", type=Path, required=True)
     g.add_argument("--out", type=Path, required=True)
     g.add_argument("--lang", default="pa")
@@ -175,10 +224,24 @@ def main() -> None:
     g.add_argument("--sample", type=int, default=None)
     g.set_defaults(func=cmd_gen_indicxlit)
 
-    c = sub.add_parser("compare", help="score indicate + IndicXlit preds against gold")
+    m = sub.add_parser("gen-llm", help="run an LLM (e.g. gpt-4o) -> predictions TSV")
+    m.add_argument("--eval", type=Path, required=True)
+    m.add_argument("--out", type=Path, required=True)
+    m.add_argument("--lang", default="bengali")
+    m.add_argument("--model", default="gpt-4o")
+    m.add_argument("--batch-size", type=int, default=20)
+    m.add_argument("--sample", type=int, default=100)
+    m.add_argument("--seed", type=int, default=42)
+    m.set_defaults(func=cmd_gen_llm)
+
+    c = sub.add_parser(
+        "compare", help="score indicate + IndicXlit + LLM preds against gold"
+    )
     c.add_argument("--eval", type=Path, required=True)
     c.add_argument("--indicxlit-preds", type=Path, default=None)
-    c.add_argument("--model", choices=["punjabi", "hindi"], default="punjabi")
+    c.add_argument("--llm-preds", type=Path, default=None)
+    c.add_argument("--llm-label", default="gpt-4o")
+    c.add_argument("--model", choices=["punjabi", "hindi", "none"], default="punjabi")
     c.add_argument("--beam", type=int, default=5)
     c.add_argument("--sample", type=int, default=None)
     c.set_defaults(func=cmd_compare)

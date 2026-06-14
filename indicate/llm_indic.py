@@ -35,7 +35,7 @@ class IndicLLMTransliterator:
 
     # Default model preferences by provider
     DEFAULT_MODELS = {
-        "openai": "gpt-4-turbo-preview",
+        "openai": "gpt-5.4-mini",
         "anthropic": "claude-3-opus-20240229",
         "google": "gemini-pro",
         "cohere": "command-r-plus",
@@ -427,7 +427,8 @@ Important Rules:
 3. Use commonly accepted romanization for Indian languages
 4. For proper nouns (names, places), use standard spellings when known
 5. Handle special characters correctly (anusvara ं, visarga ः, nukta ़, etc.)
-6. Output ONLY the transliterated text, no explanations"""
+6. Output ONLY the transliterated text, no explanations
+7. Use plain ASCII English letters only (a-z) and spaces. Do NOT use diacritics, accents, or macrons (write "patubala", never "pātubālā"; "anjana", never "añjana")"""
 
         if examples:
             prompt += "\n\nExamples:"

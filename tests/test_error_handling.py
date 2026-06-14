@@ -169,9 +169,9 @@ class TestErrorHandling(unittest.TestCase):
                     self.assertTrue(len(set(errors)) <= 2)  # Allow some variation
 
     def test_timeout_handling(self):
-        """Test handling of timeout scenarios."""
-        # The code uses func_timeout for 10-second timeout
-        # Test with input that might cause timeout
+        """Test handling of very long inputs."""
+        # Decoding is hard-bounded by max_length_output (no runaway possible),
+        # so a long multi-word input should complete and return a string.
         complex_input = "हिंदी भाषा एक अत्यधिक जटिल और समृद्ध भाषा है " * 20
 
         try:

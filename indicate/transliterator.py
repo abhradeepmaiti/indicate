@@ -4,13 +4,12 @@ import os
 from importlib.resources import files
 from typing import TYPE_CHECKING, Self, cast
 
-from func_timeout import FunctionTimedOut, func_timeout
 from safetensors.torch import load_file
 
 from .decoder import Decoder
 from .encoder import Encoder
 from .logging import get_logger
-from .utils import CharTokenizer, load_tokenizer, translate, word_candidates
+from .utils import CharTokenizer, batch_candidates, load_tokenizer
 
 if TYPE_CHECKING:
     from .rerank import Reranker
@@ -18,18 +17,39 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
+def _nbest_combine(word_cands: list[list[tuple[str, float]]], n: int) -> list[str]:
+    """Beam-combine per-word candidate lists into up to ``n`` ranked phrases."""
+    combos: list[tuple[str, float]] = [("", 0.0)]
+    for c in word_cands:
+        cands = c[:n] or [("", 0.0)]
+        combos = [
+            (p + (" " if p else "") + t, s + sc) for p, s in combos for t, sc in cands
+        ]
+        combos.sort(key=lambda x: x[1], reverse=True)
+        combos = combos[:n]
+    return [p for p, _ in combos][:n]
+
+
 class Seq2SeqTransliterator:
     """Base char-level seq2seq transliterator: lazy-loaded singleton.
 
-    Subclasses point ``MODELFN`` / ``INPUT_VOCAB`` / ``TARGET_VOCAB`` (and the max
-    lengths) at a specific language's safetensors weights and tokenizer JSONs.
+    Subclasses set ``SUBDIR`` (the per-language folder) and the tokenizer
+    filenames. Files are resolved local-first (``indicate/data/<SUBDIR>/...`` —
+    present after training) and otherwise **downloaded from the HF model repo**
+    (``HF_REPO`` @ ``HF_REVISION``) and cached, so the wheel ships no weights.
     All mutable state is assigned on the concrete subclass, so each language's
-    model is loaded and cached independently.
+    model loads and caches independently.
     """
 
-    MODELFN: str = ""
-    INPUT_VOCAB: str = ""
-    TARGET_VOCAB: str = ""
+    # HF model repo holding per-language dirs (tokenizers + saved_weights/).
+    HF_REPO: str = "soodoku/indicate"
+    HF_REVISION: str = "v0.7.0"
+
+    SUBDIR: str = ""  # e.g. "hindi_to_english"
+    INPUT_VOCAB: str = ""  # tokenizer filename, e.g. "hindi_tokens.json"
+    TARGET_VOCAB: str = ""  # "english_tokens.json"
+    ENCODER_FILE: str = "saved_weights/encoder.safetensors"
+    DECODER_FILE: str = "saved_weights/decoder.safetensors"
 
     embedding_dim: int = 256
     units: int = 1024
@@ -62,27 +82,40 @@ class Seq2SeqTransliterator:
         return cast(Self, cls._instance)
 
     @classmethod
-    def _resource(cls, rel: str) -> str:
-        return os.path.join(str(files(__package__)), rel)
+    def _local(cls, rel: str) -> str:
+        """Local path for a file under ``indicate/data/<SUBDIR>/`` (may not exist)."""
+        return os.path.join(str(files(__package__)), "data", cls.SUBDIR, rel)
+
+    @classmethod
+    def _resolve(cls, rel: str) -> str:
+        """Resolve a model file: local if present, else download from HF + cache."""
+        local = cls._local(rel)
+        if os.path.exists(local):
+            return local
+        from huggingface_hub import hf_hub_download
+
+        return hf_hub_download(
+            cls.HF_REPO, f"{cls.SUBDIR}/{rel}", revision=cls.HF_REVISION
+        )
 
     @classmethod
     def get_model_path(cls) -> str:
-        return cls._resource(cls.MODELFN)
+        """Local saved_weights dir (for display; weights may be on HF instead)."""
+        return os.path.dirname(cls._local(cls.ENCODER_FILE))
 
     @classmethod
     def get_input_vocab(cls) -> str:
-        return cls._resource(cls.INPUT_VOCAB)
+        return cls._resolve(cls.INPUT_VOCAB)
 
     @classmethod
     def get_target_vocab(cls) -> str:
-        return cls._resource(cls.TARGET_VOCAB)
+        return cls._resolve(cls.TARGET_VOCAB)
 
     @classmethod
     def _load_weights(cls) -> None:
         try:
-            model_path = cls.get_model_path()
-            cls.input_lang_tokenizer = load_tokenizer(cls.get_input_vocab())
-            cls.target_lang_tokenizer = load_tokenizer(cls.get_target_vocab())
+            cls.input_lang_tokenizer = load_tokenizer(cls._resolve(cls.INPUT_VOCAB))
+            cls.target_lang_tokenizer = load_tokenizer(cls._resolve(cls.TARGET_VOCAB))
 
             cls.encoder = Encoder(
                 cls.input_lang_tokenizer.vocab_size, cls.embedding_dim, cls.units
@@ -91,9 +124,8 @@ class Seq2SeqTransliterator:
                 cls.target_lang_tokenizer.vocab_size, cls.embedding_dim, cls.units
             )
 
-            logger.debug(f"Restoring model weights from {model_path}")
-            cls.encoder.load_state_dict(load_file(f"{model_path}/encoder.safetensors"))
-            cls.decoder.load_state_dict(load_file(f"{model_path}/decoder.safetensors"))
+            cls.encoder.load_state_dict(load_file(cls._resolve(cls.ENCODER_FILE)))
+            cls.decoder.load_state_dict(load_file(cls._resolve(cls.DECODER_FILE)))
             cls.encoder.eval()
             cls.decoder.eval()
             cls._weights_loaded = True
@@ -103,13 +135,13 @@ class Seq2SeqTransliterator:
     @classmethod
     def transliterate(cls, input: str, n: int = 1) -> str | list[str]:
         """
-        Transliterate the input text to English, one whitespace word at a time.
+        Transliterate one text to English (thin wrapper over ``transliterate_batch``).
 
         Args:
             input (str): source-language text
-            n (int): number of candidates to return. ``n == 1`` (default) returns
-                a single best string; ``n > 1`` returns a list of up to ``n``
-                ranked candidates (requires beam search).
+            n (int): number of candidates. ``n == 1`` (default) returns a single
+                best string; ``n > 1`` returns a list of up to ``n`` ranked
+                candidates (requires beam search).
         Returns:
             str when ``n == 1``; list[str] when ``n > 1``.
         Raises:
@@ -121,82 +153,74 @@ class Seq2SeqTransliterator:
             raise TypeError("Input cannot be None")
         if not isinstance(input, str):
             raise ValueError("Input must be a string")
-        if not input.strip():
-            # Handle whitespace-only input gracefully
-            return [] if n > 1 else ""
+        return cls.transliterate_batch([input], n)[0]
 
+    @classmethod
+    def transliterate_batch(
+        cls, inputs: list[str], n: int = 1
+    ) -> list[str] | list[list[str]]:
+        """
+        Transliterate many texts at once — the batched decode engine.
+
+        All words across all inputs are decoded in a single batch (one encoder /
+        decoder pass per step), which is much faster than calling ``transliterate``
+        per item. Returns one result per input, aligned to ``inputs``: a ``str``
+        each when ``n == 1``, else a ``list[str]`` of up to ``n`` candidates each.
+        """
         if not cls._weights_loaded:
             cls._load_weights()
+        assert (
+            cls.input_lang_tokenizer is not None
+            and cls.target_lang_tokenizer is not None
+            and cls.encoder is not None
+            and cls.decoder is not None
+        )
 
-        # Split on spaces and transliterate each word independently. This avoids
-        # the decoder running away on multi-word inputs and bounds each word to
-        # the 10-second timeout below.
-        words = input.split(" ") if " " in input else [input]
+        # Split each text into words (decoded independently to avoid drift); keep
+        # the per-text spans so we can reassemble.
+        per_text_words: list[list[str]] = []
+        flat: list[str] = []
+        for text in inputs:
+            words = text.split(" ") if isinstance(text, str) and text.strip() else []
+            per_text_words.append(words)
+            flat.extend(words)
 
-        if n <= 1:
-            output = []
-            for word in words:
-                target = ""
-                try:
-                    target = func_timeout(
-                        10,
-                        translate,
-                        args=(
-                            word,
-                            cls.input_lang_tokenizer,
-                            cls.target_lang_tokenizer,
-                            cls.encoder,
-                            cls.decoder,
-                            cls.max_length_input,
-                            cls.max_length_output,
-                            cls.BEAM_WIDTH,
-                            cls.RERANKER,
-                            cls.MASK_PADDING,
-                        ),
-                    )
-                    logger.debug(f"Model predicted {target}")
-                except FunctionTimedOut as fex:
-                    logger.error(
-                        f"Not able to transliterate {input} within 10 seconds, exiting with {fex}"
-                    )
-                except Exception as exe:
-                    logger.error(f"Not able to transliterate {input} due to {exe}")
-                output.append(target)
-            return " ".join(output)
-
-        # n-best: rank each word's candidates, then beam-combine across words
-        # (keep the top-n partial phrases by summed score at each step).
-        beam = max(cls.BEAM_WIDTH, n)
-        combos: list[tuple[str, float]] = [("", 0.0)]
-        for word in words:
-            cands: list[tuple[str, float]] = [("", 0.0)]
-            try:
-                got = func_timeout(
-                    10,
-                    word_candidates,
-                    args=(
-                        word,
-                        cls.input_lang_tokenizer,
-                        cls.target_lang_tokenizer,
-                        cls.encoder,
-                        cls.decoder,
-                        cls.max_length_input,
-                        cls.max_length_output,
-                        beam,
-                        cls.MASK_PADDING,
-                    ),
+        beam = max(cls.BEAM_WIDTH, n) if n > 1 else cls.BEAM_WIDTH
+        try:
+            cand_lists = (
+                batch_candidates(
+                    flat,
+                    cls.input_lang_tokenizer,
+                    cls.target_lang_tokenizer,
+                    cls.encoder,
+                    cls.decoder,
+                    cls.max_length_input,
+                    cls.max_length_output,
+                    beam,
+                    cls.MASK_PADDING,
                 )
-                cands = got[:n] or cands
-            except FunctionTimedOut as fex:
-                logger.error(f"Not able to transliterate {input} in time: {fex}")
-            except Exception as exe:
-                logger.error(f"Not able to transliterate {input} due to {exe}")
-            combos = [
-                (p + (" " if p else "") + t, s + sc)
-                for p, s in combos
-                for t, sc in cands
-            ]
-            combos.sort(key=lambda x: x[1], reverse=True)
-            combos = combos[:n]
+                if flat
+                else []
+            )
+        except Exception as exe:
+            logger.error(f"Batch transliteration failed: {exe}")
+            cand_lists = [[] for _ in flat]
 
-        return [phrase for phrase, _ in combos][:n]
+        results: list = []
+        i = 0
+        for words in per_text_words:
+            wc = cand_lists[i : i + len(words)]
+            i += len(words)
+            if n <= 1:
+                parts = []
+                for c in wc:
+                    if not c:
+                        parts.append("")
+                    elif cls.RERANKER is not None and beam > 1:
+                        parts.append(cls.RERANKER.best(c))
+                    else:
+                        parts.append(c[0][0])
+                results.append(" ".join(parts))
+            else:
+                results.append([] if not words else _nbest_combine(wc, n))
+        return results

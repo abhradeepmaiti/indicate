@@ -46,7 +46,9 @@ export GOOGLE_API_KEY=your-key
 ### For the local model (no API key):
 ```bash
 pip install indicate
-# No API key needed - uses the bundled pre-trained PyTorch model
+# No API key needed. The PyTorch weights are downloaded once from Hugging Face
+# (soodoku/indicate) on first transliterate and cached locally; tokenizers ship
+# in the wheel. After the first run it works fully offline.
 ```
 
 ## 🎯 Usage
@@ -114,8 +116,16 @@ indicate hindi2english --input large_file.txt --batch
 **Python API:**
 ```python
 from indicate import hindi2english, punjabi2english
-print(hindi2english("हिंदी"))      # hindi
-print(punjabi2english("ਰਵਿ"))      # ravi
+print(hindi2english("हिंदी"))                # "hindi"
+print(punjabi2english("ਰਵਿ"))                # "ravi"
+
+# Top-k candidates (n > 1 returns a list)
+print(hindi2english("नमस्ते", n=3))          # ["namaste", "namastey", "namste"]
+
+# Batched (much faster for many inputs)
+from indicate.hindi2english import HindiToEnglish
+HindiToEnglish.transliterate_batch(["हिंदी", "मुंबई", "गौरव सूद"])
+# -> ["hindi", "mumbai", "gaurav sood"]
 ```
 
 ## 📊 JSON Output Format
@@ -224,19 +234,21 @@ The datasets used to train the model:
 
 ## Evaluation
 
-Both PyTorch models were evaluated on the Google Dakshina test sets (2,500 unique
-words each; a word counts as correct if the prediction matches any reference
-romanization). Beam search (the shipped default) is reported alongside greedy:
+The v2 models (trained on our data + the public [Aksharantar](https://huggingface.co/datasets/ai4bharat/Aksharantar)
+corpus) are benchmarked against **AI4Bharat IndicXlit** — the same direction
+(native→Latin), the same test sets, the same metric (Top-1 exact-match,
+match-any-reference). Training is leakage-filtered so no eval word appears in it.
 
-| Model | Exact-match (greedy → beam) | Acc@≤1 | CER |
-|-------|-----------------------------|--------|-----|
-| Hindi → English | 75.80% → **77.32%** | 91.16% | 5.65% |
-| Punjabi → English | 70.96% → **71.24%** | 91.56% | 6.42% |
+| Model | Dakshina (gold) | Held-out-own names¹ |
+|-------|-----------------|---------------------|
+| Hindi → English | **74.4%** (IndicXlit 73.2%) | **52.8%** (IndicXlit 49.7%) |
+| Punjabi → English | 71.9% (IndicXlit 73.2%) | **56.9%** (IndicXlit 53.5%) |
 
-The earlier TensorFlow Hindi model scored 73.64%;
-[Indic-trans](https://github.com/libindic/indic-trans) scored 63.12% on the same
-Hindi set. Primary metric is Top-1 exact-match accuracy; CER (character error
-rate) is the soft companion that credits near-misses.
+¹ Held-out slice of our own electoral/affidavit names — the cleanest comparison,
+since IndicXlit never trained on it. **v2 matches or edges IndicXlit on the gold
+benchmark and beats it on the deployment domain.** Primary metric is Top-1
+exact-match; CER (character error rate) is the soft companion. Reproduce with
+`training/eval.py` and `training/compare.py`.
 
 Below is the edit-distance distribution on the test set (0 = exact match):
 

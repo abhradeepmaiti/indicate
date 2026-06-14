@@ -259,7 +259,7 @@ target: Bharat
         # Check that completion was called
         mock_completion.assert_called()
         call_args = mock_completion.call_args
-        self.assertEqual(call_args[1]["model"], "gpt-4-turbo-preview")
+        self.assertEqual(call_args[1]["model"], "gpt-5.4-mini")
         self.assertEqual(len(call_args[1]["messages"]), 2)
 
     @patch("indicate.llm_indic.completion")

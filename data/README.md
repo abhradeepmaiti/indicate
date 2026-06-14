@@ -2,8 +2,13 @@
 
 This directory holds **training & source data only** — it is excluded from the
 installable package (`tool.uv.build-backend.source-exclude` drops `/data`), so
-nothing here ships in the PyPI wheel. The runtime model artifacts (tokenizers +
-safetensors) live under `indicate/data/` instead.
+nothing here ships in the PyPI wheel. The runtime tokenizers (`*_tokens.json`)
+ship in the wheel under `indicate/data/`; the **safetensors weights are hosted on
+Hugging Face** (`soodoku/indicate`, tag matching the package version) and
+lazy-downloaded/cached on first use — they are kept out of both the wheel
+(`wheel-exclude`) and git tracking (`.gitignore` ignores
+`indicate/data/*/saved_weights/`). A local copy under `indicate/data/.../saved_weights/`,
+if present, is used in preference to the download (handy for training/dev).
 
 ## What lives where
 

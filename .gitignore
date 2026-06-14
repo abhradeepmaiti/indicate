@@ -15,6 +15,7 @@ past/
 .venv
 *.egg-info*
 coverage.xml
+htmlcov/
 /test_install_tf220
 /test_tf219
 # Dakshina benchmark dataset (downloaded locally for training/eval.py)
@@ -28,3 +29,5 @@ training/IMPROVEMENTS.md
 data/aksharantar/
 data/eval/
 data/*_train_v2.csv.gz
+# Model weights are hosted on HF and lazy-downloaded; tokenizer JSONs stay tracked
+indicate/data/*/saved_weights/

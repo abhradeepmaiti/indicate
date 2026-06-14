@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import sys
 import time
-from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 
@@ -26,6 +25,7 @@ from .hindi2english import HindiToEnglish
 from .indic_utils import detect_language_from_script
 from .llm_indic import IndicLLMTransliterator
 from .punjabi2english import PunjabiToEnglish
+from .transliterator import Seq2SeqTransliterator
 
 
 def _get_version() -> str:
@@ -95,9 +95,7 @@ def hindi2english(
         # Batch processing
         indicate hindi2english --input large_file.txt --batch --quiet
     """
-    _run_transliterate(
-        HindiToEnglish.transliterate, text, input_file, output_file, batch, quiet
-    )
+    _run_transliterate(HindiToEnglish, text, input_file, output_file, batch, quiet)
 
 
 @cli.command()
@@ -141,13 +139,11 @@ def punjabi2english(
         # From file
         indicate punjabi2english --input punjabi.txt --output english.txt
     """
-    _run_transliterate(
-        PunjabiToEnglish.transliterate, text, input_file, output_file, batch, quiet
-    )
+    _run_transliterate(PunjabiToEnglish, text, input_file, output_file, batch, quiet)
 
 
 def _run_transliterate(
-    transliterator: Callable[[str], str],
+    model: type[Seq2SeqTransliterator],
     text: str | None,
     input_file: click.File | None,
     output_file: click.File | None,
@@ -161,8 +157,8 @@ def _run_transliterate(
             input_text = text
         elif input_file:
             if batch:
-                # Process line by line for large files
-                _process_batch(input_file, output_file, quiet, transliterator)
+                # Process the whole file in one batched pass (fast).
+                _process_batch(input_file, output_file, quiet, model)
                 return
             else:
                 input_text = input_file.read().strip()
@@ -184,7 +180,7 @@ def _run_transliterate(
         if not quiet:
             click.echo("Transliterating...", err=True)
 
-        result = transliterator(input_text)
+        result = model.transliterate(input_text)
 
         # Output result
         if output_file:
@@ -206,27 +202,21 @@ def _process_batch(
     input_file: click.File,
     output_file: click.File | None,
     quiet: bool,
-    transliterator: Callable[[str], str],
+    model: type[Seq2SeqTransliterator],
 ) -> None:
-    """Process input file line by line."""
-    lines = input_file.readlines()
+    """Transliterate a file in one batched pass, preserving blank lines."""
+    lines = [line.strip() for line in input_file.readlines()]
+    nonempty = [line for line in lines if line]
+    # Only show progress on an interactive terminal, so it never pollutes
+    # captured/redirected stdout (CliRunner mixes stderr into output).
+    if not quiet and sys.stderr.isatty():
+        click.echo(f"Transliterating {len(nonempty)} lines...", err=True)
 
-    if not quiet:
-        from tqdm import tqdm
-
-        lines = tqdm(lines, desc="Transliterating", unit="lines")
-
-    results = []
-    for line in lines:
-        line = line.strip()
-        if line:
-            result = transliterator(line)
-            results.append(result)
-        else:
-            results.append("")
+    preds = model.transliterate_batch(nonempty) if nonempty else []
+    it = iter(preds)
+    results = [next(it) if line else "" for line in lines]
 
     output_text = "\n".join(results)
-
     if output_file:
         output_file.write(output_text)
         if not quiet:
@@ -960,18 +950,18 @@ def info() -> None:
     click.echo("  • IIT Bombay corpus")
     click.echo()
 
-    # Try to show model path info
+    # Model weights are hosted on HF and downloaded/cached on first use.
     try:
-        model_path = HindiToEnglish.get_model_path()
-        click.echo(f"Model path: {model_path}")
-
-        # Check if model files exist
         from pathlib import Path
 
-        if Path(model_path).exists():
-            click.echo("✓ Model files found")
+        click.echo(
+            f"Weights: {HindiToEnglish.HF_REPO}@{HindiToEnglish.HF_REVISION} "
+            "(Hugging Face; cached on first use)"
+        )
+        if Path(HindiToEnglish.get_model_path()).exists():
+            click.echo("✓ Local weights present (using local copy)")
         else:
-            click.echo("⚠ Model files not found")
+            click.echo("  No local weights — downloaded from HF on first transliterate")
     except Exception as e:
         click.echo(f"⚠ Could not locate model: {e}")
 
@@ -990,24 +980,18 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    # Handle old-style arguments for backward compatibility
-    if argv and not any(arg.startswith("-") for arg in argv):
-        # If no flags, assume it's hindi2english with text argument
-        argv = ["hindi2english"] + argv
-    elif "--type" in argv:
-        # Handle legacy --type and --input arguments
+    if "--type" in argv:
+        # Legacy --type/--input form: `hindi2english --type hin2eng --input f`
         import argparse
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--type", default=None)
         parser.add_argument("--input", default=None)
         args, remaining = parser.parse_known_args(argv)
-
         if args.type == "hin2eng" and args.input:
             argv = ["hindi2english", args.input] + remaining
-
-    # If no command specified, default to hindi2english
-    if not argv or (argv and argv[0] not in ["hindi2english", "info"]):
+    elif not argv or argv[0] not in cli.commands:
+        # Bare text (no subcommand) -> default to hindi2english for back-compat.
         argv = ["hindi2english"] + argv
 
     try:

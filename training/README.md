@@ -66,10 +66,15 @@ python training/eval.py --model punjabi    # data/dakshina/pa.translit.sampled.t
 A native word counts as correct if the prediction matches any reference
 romanization (the test set lists multiple valid spellings per word).
 
-| Model | Dakshina exact-match | Notes |
-|-------|----------------------|-------|
-| Hindi (PyTorch) | **75.80%** (1895/2500) | beats the old TensorFlow model's 73.64% |
-| Punjabi (PyTorch) | _see `eval.py --model punjabi`_ | trained on electoral-roll names; Dakshina pa is general vocabulary, so expect a domain gap |
+**v2 (Aksharantar-scaled) vs AI4Bharat IndicXlit** — same direction, test sets,
+and metric (Top-1 exact-match). Training is leakage-filtered (`build_v2.py`).
 
-`oos_eval.py` additionally reports held-out accuracy on the training corpus
-itself (`--model {hindi,punjabi}`), reproducing the exact train/val split.
+| Model | Dakshina (gold) | Held-out-own names |
+|-------|-----------------|--------------------|
+| Hindi → English | **74.4%** (IndicXlit 73.2%) | **52.8%** (IndicXlit 49.7%) |
+| Punjabi → English | 71.9% (IndicXlit 73.2%) | **56.9%** (IndicXlit 53.5%) |
+
+Held-out-own is the cleanest comparison (IndicXlit never trained on our
+electoral/affidavit names). Reproduce the baseline with `baseline_indicxlit.py`
+(isolated env) + `score_preds.py`, or the full breakdown with `compare.py`.
+`oos_eval.py` reports held-out accuracy on the training corpus itself.
