@@ -7,52 +7,52 @@ from __future__ import annotations
 
 import unittest
 
-from indicate import transliterate
+import indicate
 from indicate.hindi2english import HindiToEnglish
 
 
 class TestEdgeCases(unittest.TestCase):
     def test_empty_string(self):
         """Test that empty string is handled gracefully."""
-        result = transliterate.hindi2english("")
+        result = indicate.hindi2english("")
         self.assertEqual(result, "")
 
     def test_whitespace_only(self):
         """Test whitespace-only input."""
-        result = transliterate.hindi2english("   ")
+        result = indicate.hindi2english("   ")
         self.assertEqual(result, "")
         # Whitespace-only input returns empty string
 
     def test_single_character(self):
         """Test single character input."""
-        result = transliterate.hindi2english("अ")
+        result = indicate.hindi2english("अ")
         self.assertIsInstance(result, str)
         self.assertTrue(len(result) > 0)
 
     def test_non_hindi_text(self):
         """Test non-Hindi text input."""
         # English text
-        result = transliterate.hindi2english("hello")
+        result = indicate.hindi2english("hello")
         self.assertIsInstance(result, str)
 
         # Numbers
-        result = transliterate.hindi2english("123")
+        result = indicate.hindi2english("123")
         self.assertIsInstance(result, str)
 
         # Special characters
-        result = transliterate.hindi2english("!@#$%")
+        result = indicate.hindi2english("!@#$%")
         self.assertIsInstance(result, str)
 
     def test_mixed_language_text(self):
         """Test mixed Hindi-English text."""
-        result = transliterate.hindi2english("हिंदी english मिश्रित")
+        result = indicate.hindi2english("हिंदी english मिश्रित")
         self.assertIsInstance(result, str)
         # Should handle mixed content
 
     def test_very_long_text(self):
         """Test very long input text."""
         long_text = "हिंदी " * 100  # 100 repetitions
-        result = transliterate.hindi2english(long_text)
+        result = indicate.hindi2english(long_text)
         self.assertIsInstance(result, str)
         self.assertTrue(len(result) > 0)
 
@@ -68,7 +68,7 @@ class TestEdgeCases(unittest.TestCase):
 
         for text in test_cases:
             with self.subTest(text=repr(text)):
-                result = transliterate.hindi2english(text)
+                result = indicate.hindi2english(text)
                 self.assertIsInstance(result, str)
 
     def test_special_devanagari_characters(self):
@@ -82,21 +82,21 @@ class TestEdgeCases(unittest.TestCase):
 
         for text in test_cases:
             with self.subTest(text=text):
-                result = transliterate.hindi2english(text)
+                result = indicate.hindi2english(text)
                 self.assertIsInstance(result, str)
 
     def test_none_input(self):
         """Test that None input raises appropriate error."""
         with self.assertRaises((TypeError, AttributeError)):
-            transliterate.hindi2english(None)
+            indicate.hindi2english(None)
 
     def test_non_string_input(self):
         """Test that non-string input raises appropriate error."""
         with self.assertRaises(ValueError):
-            transliterate.hindi2english(123)
+            indicate.hindi2english(123)
 
         with self.assertRaises(ValueError):
-            transliterate.hindi2english(["हिंदी"])
+            indicate.hindi2english(["हिंदी"])
 
     def test_extremely_long_input(self):
         """Test extremely long input that might cause timeout."""
@@ -105,7 +105,7 @@ class TestEdgeCases(unittest.TestCase):
 
         # This should either work or timeout gracefully
         try:
-            result = transliterate.hindi2english(very_long_text)
+            result = indicate.hindi2english(very_long_text)
             self.assertIsInstance(result, str)
         except Exception as e:
             # If it fails, it should fail gracefully
@@ -129,11 +129,11 @@ class TestEdgeCases(unittest.TestCase):
         test_text = "हिंदी"
 
         # First call (model loading)
-        result1 = transliterate.hindi2english(test_text)
+        result1 = indicate.hindi2english(test_text)
 
         # Subsequent calls should be faster
         for _i in range(5):
-            result = transliterate.hindi2english(test_text)
+            result = indicate.hindi2english(test_text)
             self.assertEqual(result, result1)
 
     def test_concurrent_safety(self):
@@ -143,7 +143,7 @@ class TestEdgeCases(unittest.TestCase):
         results = []
 
         def translate_text():
-            result = transliterate.hindi2english("हिंदी")
+            result = indicate.hindi2english("हिंदी")
             results.append(result)
 
         threads = []

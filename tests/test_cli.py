@@ -11,7 +11,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from indicate.cli import cli, main
+from indicate.cli import cli
 
 
 class TestCLI(unittest.TestCase):
@@ -105,12 +105,6 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Indicate", result.output)
         self.assertIn("Model Architecture", result.output)
-
-    def test_legacy_cli_backward_compatibility(self):
-        """Test that legacy CLI arguments still work."""
-        # Test the main function which handles legacy arguments
-        result = main(["--type", "hin2eng", "--input", "हिंदी"])
-        self.assertEqual(result, 0)
 
     def test_hindi2english_help(self):
         """Test that help command works."""

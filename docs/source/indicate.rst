@@ -60,14 +60,6 @@ indicate.logging module
    :undoc-members:
    :show-inheritance:
 
-indicate.transliterate module
------------------------------
-
-.. automodule:: indicate.transliterate
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 indicate.utils module
 ---------------------
 

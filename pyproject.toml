@@ -69,7 +69,6 @@ Repository = "https://github.com/in-rolls/indicate"
 
 [project.scripts]
 indicate = "indicate.cli:cli"
-hindi2english = "indicate.transliterate:main"
 
 [tool.uv.build-backend]
 module-root = ""

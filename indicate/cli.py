@@ -972,36 +972,5 @@ def info() -> None:
     click.echo("  ✓ Use 'indicate llm --help' for LLM transliteration")
 
 
-# Legacy entry point for backward compatibility
-def main(argv: list[str] | None = None) -> int:
-    """Legacy entry point for backward compatibility."""
-    import sys
-
-    if argv is None:
-        argv = sys.argv[1:]
-
-    if "--type" in argv:
-        # Legacy --type/--input form: `hindi2english --type hin2eng --input f`
-        import argparse
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--type", default=None)
-        parser.add_argument("--input", default=None)
-        args, remaining = parser.parse_known_args(argv)
-        if args.type == "hin2eng" and args.input:
-            argv = ["hindi2english", args.input] + remaining
-    elif not argv or argv[0] not in cli.commands:
-        # Bare text (no subcommand) -> default to hindi2english for back-compat.
-        argv = ["hindi2english"] + argv
-
-    try:
-        cli(argv, standalone_mode=False)
-        return 0
-    except SystemExit as e:
-        return e.code
-    except Exception:
-        return 1
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    cli()

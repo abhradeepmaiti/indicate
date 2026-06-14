@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from indicate import transliterate
+import indicate
 from indicate.cli import _get_version, cli
 from indicate.hindi2english import HindiToEnglish
 
@@ -48,7 +48,7 @@ class TestErrorHandling(unittest.TestCase):
         very_long_input = "हिंदी " * 1000
 
         try:
-            result = transliterate.hindi2english(very_long_input)
+            result = indicate.hindi2english(very_long_input)
             # Should either work or fail gracefully
             self.assertIsInstance(result, str)
         except Exception as e:
@@ -84,7 +84,7 @@ class TestErrorHandling(unittest.TestCase):
         """Test handling of interrupted processing."""
         # This would ideally test KeyboardInterrupt handling
         # For now, we test that basic operations are atomic
-        result = transliterate.hindi2english("हिंदी")
+        result = indicate.hindi2english("हिंदी")
         self.assertEqual(result.lower(), "hindi")
 
     def test_path_traversal_protection(self):
@@ -108,7 +108,7 @@ class TestErrorHandling(unittest.TestCase):
         results = []
         for i in range(10):
             try:
-                result = transliterate.hindi2english(f"हिंदी{i}")
+                result = indicate.hindi2english(f"हिंदी{i}")
                 results.append(result)
             except Exception as e:
                 # Should handle gracefully
@@ -129,7 +129,7 @@ class TestErrorHandling(unittest.TestCase):
         for text in problematic_inputs:
             with self.subTest(text=repr(text)):
                 try:
-                    result = transliterate.hindi2english(text)
+                    result = indicate.hindi2english(text)
                     self.assertIsInstance(result, str)
                 except Exception as e:
                     # Should handle Unicode errors gracefully
@@ -155,7 +155,7 @@ class TestErrorHandling(unittest.TestCase):
                 errors = []
 
                 try:
-                    transliterate.hindi2english(invalid_input)
+                    indicate.hindi2english(invalid_input)
                 except Exception as e:
                     errors.append(type(e))
 
@@ -175,7 +175,7 @@ class TestErrorHandling(unittest.TestCase):
         complex_input = "हिंदी भाषा एक अत्यधिक जटिल और समृद्ध भाषा है " * 20
 
         try:
-            result = transliterate.hindi2english(complex_input)
+            result = indicate.hindi2english(complex_input)
             # Should either complete or timeout gracefully
             self.assertIsInstance(result, str)
         except Exception as e:
@@ -185,12 +185,12 @@ class TestErrorHandling(unittest.TestCase):
     def test_system_resource_availability(self):
         """Test behavior when system resources are constrained."""
         # Test that basic operations still work under normal conditions
-        result = transliterate.hindi2english("हिंदी")
+        result = indicate.hindi2english("हिंदी")
         self.assertEqual(result.lower(), "hindi")
 
         # Test multiple sequential operations
         for _i in range(5):
-            result = transliterate.hindi2english("हिंदी")
+            result = indicate.hindi2english("हिंदी")
             self.assertEqual(result.lower(), "hindi")
 
 

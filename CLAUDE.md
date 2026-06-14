@@ -27,9 +27,6 @@ pip install -e .  # Install in development mode (alternative)
 indicate hindi2english "राजशेखर चिंतालपति"
 indicate hindi2english --input file.txt --output result.txt
 indicate info
-
-# Legacy CLI (backward compatibility)
-hindi2english --type hin2eng --input "हिंदी"
 ```
 
 ### Documentation (Sphinx)
@@ -64,11 +61,10 @@ make clean        # Clean build artifacts
 ### Data Pipeline
 - Training data from ESPN Cricinfo, election affidavits, Google Dakshina dataset, and IIT Bombay corpus
 - Character-level tokenization with special start (^) and end ($) tokens
-- 10-second timeout per translation to prevent infinite loops
+- Decoding is hard-bounded by an input-adaptive step cap (no wall-clock timeout)
 
 ### Key Entry Points
-- Modern CLI: `indicate` command (Click group) with `hindi2english` / `punjabi2english` subcommands
-- Legacy CLI: `hindi2english` command for backward compatibility
+- CLI: `indicate` command (Click group) with `hindi2english` / `punjabi2english` subcommands
 - API: `indicate.hindi2english(text)` and `indicate.punjabi2english(text)` functions
 - Main module: `indicate/__init__.py` exposes both transliteration functions
 

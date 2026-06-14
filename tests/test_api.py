@@ -8,7 +8,6 @@ from __future__ import annotations
 import unittest
 
 import indicate
-from indicate import transliterate
 from indicate.hindi2english import HindiToEnglish
 
 
@@ -20,9 +19,9 @@ class TestAPI(unittest.TestCase):
         self.assertIsInstance(result, str)
         self.assertEqual(result.lower(), "hindi")
 
-    def test_transliterate_module_import(self):
-        """Test that transliterate module import works."""
-        result = transliterate.hindi2english("गौरव")
+    def test_api_function_call(self):
+        """Test the top-level indicate.hindi2english function."""
+        result = indicate.hindi2english("गौरव")
         self.assertIsInstance(result, str)
         self.assertEqual(result.lower(), "gaurav")
 
@@ -67,14 +66,14 @@ class TestAPI(unittest.TestCase):
 
         for hindi, expected in test_cases:
             with self.subTest(hindi=hindi):
-                result = transliterate.hindi2english(hindi)
+                result = indicate.hindi2english(hindi)
                 self.assertEqual(result.lower(), expected)
 
     def test_consistent_results(self):
         """Test that same input gives consistent results."""
         input_text = "हिंदी"
         result1 = indicate.hindi2english(input_text)
-        result2 = transliterate.hindi2english(input_text)
+        result2 = indicate.hindi2english(input_text)
         result3 = HindiToEnglish.transliterate(input_text)
 
         # All three ways should give the same result
@@ -86,7 +85,7 @@ class TestAPI(unittest.TestCase):
         input_text = "हिंदी"
 
         result1 = indicate.hindi2english(input_text)
-        result2 = transliterate.hindi2english(input_text)
+        result2 = indicate.hindi2english(input_text)
         result3 = HindiToEnglish.transliterate(input_text)
 
         self.assertIsInstance(result1, str)
