@@ -48,6 +48,7 @@ dev = [
     "ruff>=0.7.0",
     "mypy>=1.0",
     "types-tqdm>=4.66",
+    "pydoclint>=0.5",
     "black>=24.0",
     "isort>=5.0",
     "pre-commit>=3.0",
@@ -171,6 +172,14 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = ["torch.*", "safetensors.*", "google.*"]
 ignore_missing_imports = true
+
+# pydoclint: keep docstrings in sync with signatures. We type in the signature,
+# so types are not duplicated in the docstring; __init__ may carry its own args.
+[tool.pydoclint]
+style = "google"
+arg-type-hints-in-docstring = false
+check-return-types = false
+allow-init-docstring = true
 
 # Coverage configuration
 [tool.coverage.run]

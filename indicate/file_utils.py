@@ -248,6 +248,9 @@ def write_output_safely(
         source_lang: Source language.
         target_lang: Target language.
         atomic: Whether to use atomic writing.
+
+    Raises:
+        ValueError: If ``output_format`` is not a supported format.
     """
     if output_format not in OutputFormat.VALID_FORMATS:
         raise ValueError(f"Invalid output format: {output_format}")

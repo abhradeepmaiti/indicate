@@ -376,6 +376,9 @@ Focus on accurate phonetic representation."""
 
         Returns:
             Transliterated text.
+
+        Raises:
+            RuntimeError: If the LLM transliteration call fails.
         """
         if not text or not text.strip():
             return ""

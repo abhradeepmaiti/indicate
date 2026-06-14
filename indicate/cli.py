@@ -83,6 +83,14 @@ def hindi2english(
 
     TEXT: Hindi text to transliterate. If not provided, will read from --input or stdin.
 
+    Args:
+        text: Hindi (Devanagari) text to transliterate; omit to read from
+            ``--input`` or stdin.
+        input_file: Read Hindi text from this file instead of the argument.
+        output_file: Write the transliteration here instead of stdout.
+        batch: Process the input line by line (useful for large files).
+        quiet: Suppress progress output.
+
     Examples:
 
         # Transliterate text directly
@@ -132,6 +140,14 @@ def punjabi2english(
     """Transliterate Punjabi (Gurmukhi) text to English.
 
     TEXT: Punjabi text to transliterate. If not provided, will read from --input or stdin.
+
+    Args:
+        text: Punjabi (Gurmukhi) text to transliterate; omit to read from
+            ``--input`` or stdin.
+        input_file: Read Punjabi text from this file instead of the argument.
+        output_file: Write the transliteration here instead of stdout.
+        batch: Process the input line by line (useful for large files).
+        quiet: Suppress progress output.
 
     Examples:
 
@@ -320,6 +336,26 @@ def llm(
     """LLM-based transliteration for Indic languages.
 
     TEXT: Text to transliterate. If not provided, will read from --input or stdin.
+
+    Args:
+        text: Text to transliterate; omit to read from ``--input`` or stdin.
+        source: Source language (e.g. hindi, tamil); auto-detected if omitted.
+        target: Target language (default: english).
+        input_path: Read text from this file instead of the argument.
+        output_path: Write output to this file instead of stdout.
+        output_format: Output format, ``text`` or ``json``.
+        provider: LLM provider (openai, anthropic, google); auto-detected from
+            the environment if omitted.
+        model: Specific model to use; uses the provider default if omitted.
+        api_key: API key for the provider; prefer environment variables.
+        show_examples: Print the few-shot examples being used, then continue.
+        no_examples: Skip few-shot examples (faster, possibly less accurate).
+        batch: Process the input line by line (useful for large files).
+        backup: Back up the output file first if it already exists.
+        resume: Resume a previously interrupted batch operation.
+        dry_run: Show what would be processed without writing anything.
+        atomic: Use atomic file writing.
+        quiet: Suppress progress output.
 
     Examples:
 

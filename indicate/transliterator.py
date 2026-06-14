@@ -138,8 +138,8 @@ class Seq2SeqTransliterator:
         Transliterate one text to English (thin wrapper over ``transliterate_batch``).
 
         Args:
-            input (str): source-language text
-            n (int): number of candidates. ``n == 1`` (default) returns a single
+            input: source-language text
+            n: number of candidates. ``n == 1`` (default) returns a single
                 best string; ``n > 1`` returns a list of up to ``n`` ranked
                 candidates (requires beam search).
         Returns:
@@ -147,7 +147,6 @@ class Seq2SeqTransliterator:
         Raises:
             TypeError: If input is None
             ValueError: If input is not a string
-            RuntimeError: If model loading fails
         """
         if input is None:
             raise TypeError("Input cannot be None")
