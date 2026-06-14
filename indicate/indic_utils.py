@@ -48,7 +48,7 @@ def detect_indic_script(text: str) -> str | None:
                 break
 
     # Return the script with the most characters
-    max_script = max(script_counts, key=script_counts.get)
+    max_script = max(script_counts, key=lambda s: script_counts[s])
     if script_counts[max_script] > 0:
         return max_script
 
@@ -251,8 +251,9 @@ def split_mixed_script_text(text: str) -> list[tuple[str, str]]:
             current_segment = char
             current_script = char_script
 
-    # Add the last segment
+    # Add the last segment (a non-empty segment means the loop set current_script)
     if current_segment.strip():
+        assert current_script is not None
         segments.append((current_segment.strip(), current_script))
 
     return segments

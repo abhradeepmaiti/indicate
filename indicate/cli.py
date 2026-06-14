@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import sys
 import time
+from collections.abc import Iterable
 from importlib import metadata
 from pathlib import Path
+from typing import IO, cast
 
 import click
 
@@ -72,8 +74,8 @@ def cli(ctx: click.Context) -> None:
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
 def hindi2english(
     text: str | None,
-    input_file: click.File | None,
-    output_file: click.File | None,
+    input_file: IO[str] | None,
+    output_file: IO[str] | None,
     batch: bool,
     quiet: bool,
 ) -> None:
@@ -122,8 +124,8 @@ def hindi2english(
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
 def punjabi2english(
     text: str | None,
-    input_file: click.File | None,
-    output_file: click.File | None,
+    input_file: IO[str] | None,
+    output_file: IO[str] | None,
     batch: bool,
     quiet: bool,
 ) -> None:
@@ -145,8 +147,8 @@ def punjabi2english(
 def _run_transliterate(
     model: type[Seq2SeqTransliterator],
     text: str | None,
-    input_file: click.File | None,
-    output_file: click.File | None,
+    input_file: IO[str] | None,
+    output_file: IO[str] | None,
     batch: bool,
     quiet: bool,
 ) -> None:
@@ -180,7 +182,7 @@ def _run_transliterate(
         if not quiet:
             click.echo("Transliterating...", err=True)
 
-        result = model.transliterate(input_text)
+        result = cast("str", model.transliterate(input_text))
 
         # Output result
         if output_file:
@@ -199,8 +201,8 @@ def _run_transliterate(
 
 
 def _process_batch(
-    input_file: click.File,
-    output_file: click.File | None,
+    input_file: IO[str],
+    output_file: IO[str] | None,
     quiet: bool,
     model: type[Seq2SeqTransliterator],
 ) -> None:
@@ -212,7 +214,7 @@ def _process_batch(
     if not quiet and sys.stderr.isatty():
         click.echo(f"Transliterating {len(nonempty)} lines...", err=True)
 
-    preds = model.transliterate_batch(nonempty) if nonempty else []
+    preds = cast("list[str]", model.transliterate_batch(nonempty)) if nonempty else []
     it = iter(preds)
     results = [next(it) if line else "" for line in lines]
 
@@ -520,13 +522,16 @@ def _process_single_text(
             )
             sys.exit(1)
 
+    # Default when no --source was given and there was nothing to auto-detect from.
+    source = source or "hindi"
+
     # Initialize transliterator
     if not quiet:
         click.echo("Initializing LLM transliterator...", err=True)
 
     try:
         transliterator = IndicLLMTransliterator(
-            source_lang=source if source else "hindi",
+            source_lang=source,
             target_lang=target,
             provider=provider,
             model=model,
@@ -746,6 +751,7 @@ def _process_file_batch(
 
     # Process lines with progress
     results = []
+    lines_iter: Iterable[tuple[int, str]]
     if not quiet:
         from tqdm import tqdm
 

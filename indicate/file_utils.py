@@ -430,7 +430,7 @@ def _read_json_input(input_path: Path) -> list[str]:
                 return texts
             elif "texts" in data:
                 # Alternative format
-                return data["texts"]
+                return list(data["texts"])
             else:
                 # Assume the values are the texts
                 return list(data.values())
